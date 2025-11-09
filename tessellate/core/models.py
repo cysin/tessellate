@@ -360,14 +360,14 @@ class Problem:
         """
         Get bins compatible with an item.
 
-        Material and grain are just labels for organizing output, not constraints.
-        Only dimensions matter for physical placement.
+        Material, thickness, and grain are just labels for organizing output, not constraints.
+        Only physical dimensions (width, height) matter for placement feasibility.
 
         Args:
             item: Item to check
 
         Returns:
-            List of compatible bins
+            List of compatible bins (those large enough to fit the item)
         """
         return [
             bin_type
