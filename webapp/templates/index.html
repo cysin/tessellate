@@ -1099,11 +1099,14 @@
             const actualBoardHeight = height + boardHeightOffset;
 
             // Collect product data with part offsets applied
-            const products = collectProductData(partWidthOffset, partHeightOffset);
+            const {items: products, metadata: itemMetadata} = collectProductData(partWidthOffset, partHeightOffset);
             if (!products || products.length === 0) {
                 alert('Please add at least one product');
                 return;
             }
+
+            // Store metadata globally for later use in display
+            window.itemMetadata = itemMetadata;
 
             // Collect leftover materials if enabled
             const leftoverMaterials = [];
@@ -1173,9 +1176,12 @@
                     };
 
                     // Create mapping from code to name for display
+                    // Include ALL codes from metadata (including merged items)
                     const codeToNameMap = {};
-                    products.forEach(product => {
-                        codeToNameMap[product.code] = product.name;
+                    Object.values(itemMetadata).forEach(meta => {
+                        meta.codes.forEach(c => {
+                            codeToNameMap[c.code] = c.name;
+                        });
                     });
 
                     displayResults(solution, offsetInfo, codeToNameMap);
@@ -1190,7 +1196,11 @@
         function collectProductData(partWidthOffset = 0, partHeightOffset = 0) {
             const tbody = document.getElementById('productTableBody');
             const rows = tbody.getElementsByTagName('tr');
-            const productMap = new Map(); // Use Map to detect and merge duplicates
+
+            // NEW: Group by DIMENSIONS only (exclude code/name for optimal packing)
+            const dimensionGroups = new Map();
+            const metadata = {}; // Track which codes belong to each merged item
+            let mergedIdCounter = 1;
 
             for (let row of rows) {
                 const cells = row.cells;
@@ -1208,28 +1218,48 @@
                     const actualWidth = width + partWidthOffset;
                     const actualHeight = height + partHeightOffset;
 
-                    // Create unique key for duplicate detection
-                    // Items are considered duplicates if they have same:
-                    // code, dimensions, thickness, material, and grain
-                    const key = `${code}-${width}-${height}-${thickness}-${color}-${grain}`;
+                    // NEW grouping key: EXCLUDE code/name
+                    // Items with same dimensions are grouped together for optimal packing
+                    const dimKey = `${actualWidth}-${actualHeight}-${thickness}-${color || "Wood"}-${grain}`;
 
-                    if (productMap.has(key)) {
-                        // Duplicate found - merge by adding quantities
-                        const existing = productMap.get(key);
-                        existing.quantity += quantity;
-                    } else {
-                        // New unique item
-                        productMap.set(key, {
-                            id: code,
+                    if (!dimensionGroups.has(dimKey)) {
+                        // Create new merged group
+                        const mergedId = `merged_${mergedIdCounter++}`;
+
+                        dimensionGroups.set(dimKey, {
+                            id: mergedId,
                             width: actualWidth,
                             height: actualHeight,
                             thickness: thickness,
                             material: color || "Wood",
                             quantity: quantity,
-                            rotatable: grain === 'mixed', // mixed = rotatable
-                            name: name,
+                            rotatable: grain === 'mixed',
+                            originalWidth: width,
+                            originalHeight: height
+                        });
+
+                        // Store metadata for this merged item
+                        metadata[mergedId] = {
+                            codes: [{
+                                code: code,
+                                name: name,
+                                qty: quantity,
+                                originalWidth: width,
+                                originalHeight: height
+                            }],
+                            dimensions: `${width}×${height}×${thickness}`,
+                            material: color || "Wood"
+                        };
+                    } else {
+                        // Add to existing group
+                        const existing = dimensionGroups.get(dimKey);
+                        existing.quantity += quantity;
+
+                        // Add code to metadata
+                        metadata[existing.id].codes.push({
                             code: code,
-                            // Store original dimensions for display
+                            name: name,
+                            qty: quantity,
                             originalWidth: width,
                             originalHeight: height
                         });
@@ -1237,8 +1267,10 @@
                 }
             }
 
-            // Convert Map values to array
-            return Array.from(productMap.values());
+            return {
+                items: Array.from(dimensionGroups.values()),
+                metadata: metadata
+            };
         }
 
         function displayResults(solution, offsetInfo = null, codeToNameMap = {}) {
@@ -1667,20 +1699,74 @@
                 }
             });
 
+            // NEW: Split merged items back to individual codes with proportional distribution
+            const displayParts = [];
+            const itemMetadata = window.itemMetadata || {};
+
+            partsCounts.forEach((part) => {
+                const mergedId = part.itemId;
+
+                // Check if this is a merged item from our grouping
+                if (itemMetadata[mergedId] && itemMetadata[mergedId].codes.length > 1) {
+                    // This is a merged item - split it proportionally
+                    const codes = itemMetadata[mergedId].codes;
+                    const totalOnBoard = part.countOnBoard;
+                    const totalQty = codes.reduce((sum, c) => sum + c.qty, 0);
+
+                    let distributed = 0;
+                    codes.forEach((codeInfo, idx) => {
+                        const proportion = codeInfo.qty / totalQty;
+                        // Last code gets remainder to ensure total matches
+                        const qtyOnBoard = (idx === codes.length - 1)
+                            ? totalOnBoard - distributed
+                            : Math.round(proportion * totalOnBoard);
+
+                        if (qtyOnBoard > 0) {
+                            displayParts.push({
+                                itemId: codeInfo.code,
+                                name: codeInfo.name,
+                                code: codeInfo.code,
+                                width: part.width,
+                                height: part.height,
+                                rotated: part.rotated,
+                                countOnBoard: qtyOnBoard,
+                                originalMergedId: mergedId,
+                                isSplit: true
+                            });
+                            distributed += qtyOnBoard;
+                        }
+                    });
+                } else if (itemMetadata[mergedId] && itemMetadata[mergedId].codes.length === 1) {
+                    // Not merged (only one code) - display as-is
+                    const codeInfo = itemMetadata[mergedId].codes[0];
+                    displayParts.push({
+                        itemId: codeInfo.code,
+                        name: codeInfo.name,
+                        code: codeInfo.code,
+                        width: part.width,
+                        height: part.height,
+                        rotated: part.rotated,
+                        countOnBoard: part.countOnBoard,
+                        isSplit: false
+                    });
+                } else {
+                    // Fallback: no metadata (shouldn't happen with new system)
+                    displayParts.push(part);
+                }
+            });
+
             // Parts list - split into two columns for print optimization
-            // Convert partsCounts to array
-            const partsArray = Array.from(partsCounts.values());
+            // Use displayParts instead of partsCounts for rendering
+            const partsArray = displayParts;
             const midpoint = Math.ceil(partsArray.length / 2);
             const leftParts = partsArray.slice(0, midpoint);
             const rightParts = partsArray.slice(midpoint);
 
             // Helper function to create part row HTML
             const createPartRow = (part, rowNum) => {
-                // Handle merged itemIds like "CB(L)/CB(R)"
-                const itemIds = part.itemId.split('/');
-                const partNames = itemIds.map(id => codeToNameMap[id] || '').filter(n => n);
-                const partName = partNames.join('/');
-                const partCode = part.itemId;
+                // Get part name and code
+                const partName = part.name || codeToNameMap[part.code] || codeToNameMap[part.itemId] || '';
+                const partCode = part.code || part.itemId;
 
                 // Calculate original part dimensions
                 let dimText;
@@ -1695,13 +1781,21 @@
                 }
 
                 // Calculate quantity: countOnBoard × totalBoards = total
-                const total = part.countOnBoard * quantity;
-                const qtyText = `${part.countOnBoard} × ${quantity} = ${total}`;
+                const perBoard = part.countOnBoard;
+                const total = perBoard * quantity;
+
+                // Option B display: show per board and total
+                const qtyText = `${perBoard} × ${quantity} = ${total}`;
+
+                // Add visual indicator for split items
+                const splitIndicator = part.isSplit
+                    ? `<span style="color: #667eea; font-size: 0.85em;"> *</span>`
+                    : '';
 
                 return `
                     <tr>
                         <td>${rowNum}</td>
-                        <td>${partName}</td>
+                        <td>${partName}${splitIndicator}</td>
                         <td>${partCode}</td>
                         <td>${dimText}</td>
                         <td>${qtyText}</td>
@@ -1752,6 +1846,11 @@
                             </table>
                         </div>
                     </div>
+                    ${displayParts.some(p => p.isSplit) ? `
+                        <p style="margin-top: 10px; font-size: 0.85em; color: #666;">
+                            <span style="color: #667eea;">*</span> Parts with identical dimensions are grouped for optimal cutting efficiency and distributed proportionally.
+                        </p>
+                    ` : ''}
                 </div>
             `;
 
