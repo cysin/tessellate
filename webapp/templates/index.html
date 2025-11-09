@@ -830,17 +830,24 @@
                 // TODO: Collect leftover data
             }
 
-            // Create single bin type
-            // Note: Material/thickness on items are just labels for organizing output,
-            // not actual constraints. All items can be placed on any board.
-            const bins = [{
-                id: `Board-${height}x${width}`,
-                width: width,
-                height: height,
-                thickness: 18,  // Not used as constraint
-                material: "Standard",  // Not used as constraint
-                available: -1  // Unlimited
-            }];
+            // Create bins for each unique color+thickness combination
+            // Note: Material/thickness are labels for organizing output, not hard constraints.
+            // Items can be placed on any board, but bins are organized by color for clarity.
+            const binMap = new Map();
+            products.forEach(product => {
+                const key = `${product.material}-${product.thickness}`;
+                if (!binMap.has(key)) {
+                    binMap.set(key, {
+                        id: `Board-${product.material}-${product.thickness}mm`,
+                        width: width,
+                        height: height,
+                        thickness: product.thickness,
+                        material: product.material,
+                        available: -1  // Unlimited
+                    });
+                }
+            });
+            const bins = Array.from(binMap.values());
 
             // Prepare request
             const requestData = {
@@ -969,7 +976,7 @@
             let html = `
                 <div class="board-card">
                     <div class="board-header">
-                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${Math.round(bin.thickness)} (H x W) ${bin.material}</div>
+                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${Math.round(bin.thickness)} (H x W x T) ${bin.material}</div>
                         <div class="board-util">Utilization: ${(bin.utilization * 100).toFixed(1)}%</div>
                     </div>
             `;
