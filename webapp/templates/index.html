@@ -214,6 +214,12 @@
             border: 1px solid #f5c6cb;
         }
 
+        .upload-status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
         /* Leftover Materials */
         .leftover-section {
             padding: 20px;
@@ -677,7 +683,8 @@
                 <td>
                     <select>
                         <option value="mixed">Mixed</option>
-                        <option value="uni">Unidirectional</option>
+                        <option value="horizontal">Horizontal</option>
+                        <option value="vertical">Vertical</option>
                     </select>
                 </td>
                 <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
@@ -751,15 +758,20 @@
 
                 const data = await response.json();
 
-                if (data.success) {
+                if (response.ok && data.products) {
                     populateTableFromExcel(data.products);
                     statusDiv.innerHTML = `<div class="upload-status success">✓ ${data.count} products loaded</div>`;
+
+                    // Show warnings if any
+                    if (data.warnings && data.warnings.length > 0) {
+                        statusDiv.innerHTML += `<div class="upload-status warning">Warnings: ${data.warnings.join(', ')}</div>`;
+                    }
 
                     // Switch to manual mode so user can see/edit
                     document.querySelector('input[name="inputMethod"][value="manual"]').checked = true;
                     toggleInputMethod();
                 } else {
-                    statusDiv.innerHTML = `<div class="upload-status error">Error: ${data.error}</div>`;
+                    statusDiv.innerHTML = `<div class="upload-status error">Error: ${data.error || 'Upload failed'}</div>`;
                 }
             } catch (error) {
                 statusDiv.innerHTML = `<div class="upload-status error">Upload failed: ${error.message}</div>`;
@@ -782,11 +794,12 @@
                     <td><input type="number" value="${product.width}"></td>
                     <td><input type="number" value="${product.thickness}"></td>
                     <td><input type="text" value="${product.color}"></td>
-                    <td><input type="number" value="${product.quantity}"></td>
+                    <td><input type="number" value="${product.qty}"></td>
                     <td>
                         <select>
                             <option value="mixed" ${product.grain === 'mixed' ? 'selected' : ''}>Mixed</option>
-                            <option value="uni" ${product.grain === 'uni' ? 'selected' : ''}>Unidirectional</option>
+                            <option value="horizontal" ${product.grain === 'horizontal' ? 'selected' : ''}>Horizontal</option>
+                            <option value="vertical" ${product.grain === 'vertical' ? 'selected' : ''}>Vertical</option>
                         </select>
                     </td>
                     <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
