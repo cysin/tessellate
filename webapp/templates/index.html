@@ -1049,6 +1049,87 @@
                 </div>
             `;
 
+            // Detailed boards summary table - aggregate by dimensions, thickness, and color
+            const boardsMap = new Map();
+            solution.bins.forEach((bin) => {
+                // Calculate original dimensions for this specific bin
+                let originalHeight = bin.height;
+                let originalWidth = bin.width;
+                if (offsetInfo) {
+                    // Subtract the offset to get original dimensions
+                    // If offset is -4, then original = current - (-4) = current + 4
+                    originalHeight = bin.height - (offsetInfo.boardHeightOffset || 0);
+                    originalWidth = bin.width - (offsetInfo.boardWidthOffset || 0);
+                }
+
+                const key = `${originalHeight}-${originalWidth}-${bin.thickness || '-'}-${bin.material || '-'}`;
+                if (boardsMap.has(key)) {
+                    boardsMap.get(key).quantity += (bin.quantity || 1);
+                } else {
+                    boardsMap.set(key, {
+                        height: originalHeight,
+                        width: originalWidth,
+                        thickness: bin.thickness || '-',
+                        material: bin.material || '-',
+                        quantity: bin.quantity || 1
+                    });
+                }
+            });
+
+            // Sort boards by color, thickness, then dimensions
+            const sortedBoards = Array.from(boardsMap.values()).sort((a, b) => {
+                // First by color (material)
+                if (a.material !== b.material) {
+                    return a.material.localeCompare(b.material);
+                }
+                // Then by thickness
+                if (a.thickness !== b.thickness) {
+                    // Handle '-' (no thickness) - put it at the end
+                    if (a.thickness === '-') return 1;
+                    if (b.thickness === '-') return -1;
+                    return parseFloat(a.thickness) - parseFloat(b.thickness);
+                }
+                // Then by height
+                if (a.height !== b.height) {
+                    return a.height - b.height;
+                }
+                // Finally by width
+                return a.width - b.width;
+            });
+
+            html += `
+                <div class="board-summary-table">
+                    <h3>Boards Summary</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background-color: #f0f0f0; border-bottom: 2px solid #333;">
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Color</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Thickness</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Dimensions (H × W)</th>
+                                <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            sortedBoards.forEach((board) => {
+                const dimensions = `${board.height} × ${board.width}`;
+                html += `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px; border: 1px solid #ddd;">${board.material}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${board.thickness}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${dimensions}</td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">${board.quantity}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
             // Backend returns already-aggregated bins with quantities
             // Display each board group
             solution.bins.forEach((bin, index) => {
