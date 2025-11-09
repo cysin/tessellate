@@ -1657,7 +1657,9 @@
                         actualCodes.push(id);
                     }
                 });
-                const label = actualCodes.join('/') + (posData.rotated ? ' ↻' : '');
+                // Deduplicate codes (multiple merged groups might contain same codes)
+                const uniqueCodes = [...new Set(actualCodes)];
+                const label = uniqueCodes.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
@@ -1741,20 +1743,19 @@
                             ? totalOnBoard - distributed
                             : Math.round(proportion * totalOnBoard);
 
-                        if (qtyOnBoard > 0) {
-                            displayParts.push({
-                                itemId: codeInfo.code,
-                                name: codeInfo.name,
-                                code: codeInfo.code,
-                                width: part.width,
-                                height: part.height,
-                                rotated: part.rotated,
-                                countOnBoard: qtyOnBoard,
-                                originalMergedId: mergedId,
-                                isSplit: true
-                            });
-                            distributed += qtyOnBoard;
-                        }
+                        // Always show all codes, even if qtyOnBoard is 0 due to proportional distribution
+                        displayParts.push({
+                            itemId: codeInfo.code,
+                            name: codeInfo.name,
+                            code: codeInfo.code,
+                            width: part.width,
+                            height: part.height,
+                            rotated: part.rotated,
+                            countOnBoard: qtyOnBoard,
+                            originalMergedId: mergedId,
+                            isSplit: true
+                        });
+                        distributed += qtyOnBoard;
                     });
                 } else if (allCodes.length === 1) {
                     // Not merged (only one code) - display as-is
@@ -2127,7 +2128,9 @@
                         actualCodes.push(id);
                     }
                 });
-                const label = actualCodes.join('/') + (posData.rotated ? ' ↻' : '');
+                // Deduplicate codes (multiple merged groups might contain same codes)
+                const uniqueCodes = [...new Set(actualCodes)];
+                const label = uniqueCodes.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
