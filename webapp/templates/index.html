@@ -170,6 +170,11 @@
             flex-wrap: wrap;
         }
 
+        /* Hide the file input */
+        #excelFile {
+            display: none;
+        }
+
         .upload-status {
             padding: 10px 15px;
             border-radius: 6px;
@@ -503,8 +508,8 @@
             <div class="excel-upload" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <h3 class="mb-10">📥 Import from Excel:</h3>
                 <div class="file-input-group">
-                    <input type="file" id="excelFile" accept=".xlsx,.xls">
-                    <button class="btn btn-primary" onclick="uploadExcel()">Import</button>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="uploadExcel()">
+                    <button class="btn btn-primary" onclick="document.getElementById('excelFile').click()">Import</button>
                     <button class="btn btn-secondary" onclick="downloadTemplate()">Download Template</button>
                 </div>
                 <div style="margin-top: 10px;">
