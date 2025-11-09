@@ -953,9 +953,37 @@
                 </div>
             `;
 
-            // Display each board
-            solution.bins.forEach((bin, index) => {
-                html += createBoardCard(bin, index + 1, solution.bins.length, offsetInfo);
+            // Group boards by configuration (board spec + parts layout)
+            const boardGroups = new Map();
+            solution.bins.forEach((bin) => {
+                // Create signature for parts configuration
+                const partsSignature = bin.items
+                    .map(item => `${item.itemId}-${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`)
+                    .sort()
+                    .join('|');
+
+                // Key includes board spec AND parts configuration
+                const key = `${bin.material}-${bin.thickness}-${Math.round(bin.width)}-${Math.round(bin.height)}-${partsSignature}`;
+
+                if (!boardGroups.has(key)) {
+                    boardGroups.set(key, {
+                        material: bin.material,
+                        thickness: bin.thickness,
+                        width: bin.width,
+                        height: bin.height,
+                        boards: [],
+                        totalUtilization: 0
+                    });
+                }
+                const group = boardGroups.get(key);
+                group.boards.push(bin);
+                group.totalUtilization += bin.utilization;
+            });
+
+            // Display each board group
+            let groupIndex = 1;
+            boardGroups.forEach((group) => {
+                html += createBoardGroupCard(group, groupIndex++, offsetInfo);
             });
 
             // Display unplaced items if any
@@ -971,6 +999,144 @@
             }
 
             resultsContent.innerHTML = html;
+        }
+
+        function createBoardGroupCard(group, groupNum, offsetInfo = null) {
+            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+
+            const quantity = group.boards.length;
+            const boardMaterial = group.material;
+            const boardThickness = Math.round(group.thickness);
+            const avgUtilization = group.totalUtilization / quantity;
+
+            // Calculate original and adjusted board dimensions
+            let boardTitle;
+            if (offsetInfo) {
+                const origHeight = Math.round(offsetInfo.originalBoardHeight);
+                const origWidth = Math.round(offsetInfo.originalBoardWidth);
+                const adjHeight = Math.round(group.height);
+                const adjWidth = Math.round(group.width);
+
+                if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
+                    boardTitle = `BOARD x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial} (Actual: ${adjHeight} x ${adjWidth})`;
+                } else {
+                    boardTitle = `BOARD x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial}`;
+                }
+            } else {
+                boardTitle = `BOARD x${quantity} - ${Math.round(group.height)} x ${Math.round(group.width)} x ${boardThickness} (H x W x T) ${boardMaterial}`;
+            }
+
+            let html = `
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-title">${boardTitle}</div>
+                        <div class="board-util">Average Utilization: ${(avgUtilization * 100).toFixed(1)}%</div>
+                    </div>
+            `;
+
+            // Create SVG diagram for first board as reference
+            const firstBoard = group.boards[0];
+            const scale = 0.15;
+            const svgWidth = group.width * scale + 40;
+            const svgHeight = group.height * scale + 40;
+
+            html += `<div class="cutting-diagram">`;
+            html += `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">Reference layout (Board 1 of ${quantity}):</p>`;
+            html += `<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
+
+            // Bin outline
+            html += `<rect x="20" y="20" width="${group.width * scale}" height="${group.height * scale}"
+                     fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
+
+            // Draw items from first board
+            firstBoard.items.forEach((item, idx) => {
+                const color = colors[idx % colors.length];
+                const x = 20 + item.x * scale;
+                const y = 20 + item.y * scale;
+                const w = item.width * scale;
+                const h = item.height * scale;
+
+                html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
+                         fill="${color}" class="item-rect"/>`;
+                html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text">
+                         ${item.itemId}${item.rotated ? ' ↻' : ''}</text>`;
+            });
+
+            html += `</svg></div>`;
+
+            // Aggregate parts list across all boards
+            const partsCounts = new Map();
+            group.boards.forEach(board => {
+                board.items.forEach(item => {
+                    const key = `${item.itemId}-${item.width}-${item.height}-${item.rotated}`;
+                    if (!partsCounts.has(key)) {
+                        partsCounts.set(key, {
+                            itemId: item.itemId,
+                            width: item.width,
+                            height: item.height,
+                            material: item.material,
+                            thickness: item.thickness,
+                            rotated: item.rotated,
+                            count: 0
+                        });
+                    }
+                    partsCounts.get(key).count++;
+                });
+            });
+
+            // Parts list
+            html += `
+                <div class="parts-list">
+                    <h4>Parts across all ${quantity} board(s):</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name/Code</th>
+                                <th>Dimensions</th>
+                                <th>Material</th>
+                                <th>Thickness</th>
+                                <th>Total Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            let rowNum = 1;
+            partsCounts.forEach((part) => {
+                // Calculate original part dimensions
+                let dimText;
+                if (offsetInfo && (offsetInfo.partWidthOffset !== 0 || offsetInfo.partHeightOffset !== 0)) {
+                    const origWidth = Math.round(part.width - offsetInfo.partWidthOffset);
+                    const origHeight = Math.round(part.height - offsetInfo.partHeightOffset);
+                    const adjWidth = Math.round(part.width);
+                    const adjHeight = Math.round(part.height);
+                    dimText = `${origWidth} x ${origHeight} mm (Actual: ${adjWidth} x ${adjHeight})${part.rotated ? ' (rotated)' : ''}`;
+                } else {
+                    dimText = `${part.width.toFixed(0)} x ${part.height.toFixed(0)} mm${part.rotated ? ' (rotated)' : ''}`;
+                }
+
+                html += `
+                    <tr>
+                        <td>${rowNum++}</td>
+                        <td>${part.itemId}</td>
+                        <td>${dimText}</td>
+                        <td>${part.material}</td>
+                        <td>${part.thickness} mm</td>
+                        <td>${part.count} pc${part.count > 1 ? 's' : ''}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            html += `</div>`;
+
+            return html;
         }
 
         function createBoardCard(bin, boardNum, totalBoards, offsetInfo = null) {
