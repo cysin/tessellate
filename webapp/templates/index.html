@@ -548,7 +548,10 @@
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-success" onclick="addProductRow()">+ Add Row</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="addProductRow()">+ Add Row</button>
+                    <button class="btn btn-secondary" onclick="exportProductList()">Export to Excel</button>
+                </div>
             </div>
 
             <!-- Leftover Materials Section -->
@@ -644,9 +647,9 @@
     </div>
 
     <script>
-        // Initialize with one empty row
+        // Product list starts empty - user can add rows manually or import from Excel
         window.onload = function() {
-            addProductRow();
+            // No initial rows
         };
 
 
@@ -790,6 +793,75 @@
             window.location.href = '/api/download-template';
         }
 
+        async function exportProductList() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+
+            if (rows.length === 0) {
+                alert('No products to export');
+                return;
+            }
+
+            const products = [];
+            for (let row of rows) {
+                const cells = row.cells;
+                const name = cells[1].querySelector('input').value.trim();
+                const code = cells[2].querySelector('input').value.trim();
+                const width = parseFloat(cells[3].querySelector('input').value);
+                const height = parseFloat(cells[4].querySelector('input').value);
+                const thickness = parseFloat(cells[5].querySelector('input').value);
+                const color = cells[6].querySelector('input').value.trim();
+                const quantity = parseInt(cells[7].querySelector('input').value);
+                const grain = cells[8].querySelector('select').value;
+
+                // Only include rows with at least name and code
+                if (name || code) {
+                    products.push({
+                        name: name || '',
+                        code: code || '',
+                        width: isNaN(width) ? '' : width,
+                        height: isNaN(height) ? '' : height,
+                        thickness: isNaN(thickness) ? '' : thickness,
+                        color: color || '',
+                        qty: isNaN(quantity) ? 1 : quantity,
+                        grain: grain || 'mixed'
+                    });
+                }
+            }
+
+            if (products.length === 0) {
+                alert('No valid products to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/export-products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ products: products })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'product_list.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const data = await response.json();
+                    alert('Export failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+
         async function generateCuttingPlan() {
             // Collect board configuration and offsets
             const boardSizeStr = document.getElementById('boardSize').value;
@@ -893,7 +965,7 @@
         function collectProductData(partWidthOffset = 0, partHeightOffset = 0) {
             const tbody = document.getElementById('productTableBody');
             const rows = tbody.getElementsByTagName('tr');
-            const products = [];
+            const productMap = new Map(); // Use Map to detect and merge duplicates
 
             for (let row of rows) {
                 const cells = row.cells;
@@ -911,24 +983,37 @@
                     const actualWidth = width + partWidthOffset;
                     const actualHeight = height + partHeightOffset;
 
-                    products.push({
-                        id: code,
-                        width: actualWidth,
-                        height: actualHeight,
-                        thickness: thickness,
-                        material: color || "Wood",
-                        quantity: quantity,
-                        rotatable: grain === 'mixed', // mixed = rotatable
-                        name: name,
-                        code: code,
-                        // Store original dimensions for display
-                        originalWidth: width,
-                        originalHeight: height
-                    });
+                    // Create unique key for duplicate detection
+                    // Items are considered duplicates if they have same:
+                    // code, dimensions, thickness, material, and grain
+                    const key = `${code}-${width}-${height}-${thickness}-${color}-${grain}`;
+
+                    if (productMap.has(key)) {
+                        // Duplicate found - merge by adding quantities
+                        const existing = productMap.get(key);
+                        existing.quantity += quantity;
+                    } else {
+                        // New unique item
+                        productMap.set(key, {
+                            id: code,
+                            width: actualWidth,
+                            height: actualHeight,
+                            thickness: thickness,
+                            material: color || "Wood",
+                            quantity: quantity,
+                            rotatable: grain === 'mixed', // mixed = rotatable
+                            name: name,
+                            code: code,
+                            // Store original dimensions for display
+                            originalWidth: width,
+                            originalHeight: height
+                        });
+                    }
                 }
             }
 
-            return products;
+            // Convert Map values to array
+            return Array.from(productMap.values());
         }
 
         function displayResults(solution, offsetInfo = null) {

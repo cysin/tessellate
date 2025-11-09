@@ -26,6 +26,47 @@ app = Flask(__name__)
 CORS(app)
 
 
+def deduplicate_items(items):
+    """
+    Deduplicate items by merging identical items and summing quantities.
+
+    Items are considered identical if they have the same:
+    - id (code)
+    - width
+    - height
+    - thickness
+    - material
+    - rotatable
+
+    Args:
+        items: List of item dictionaries
+
+    Returns:
+        List of deduplicated item dictionaries
+    """
+    item_map = {}
+
+    for item in items:
+        # Create unique key for duplicate detection
+        key = (
+            item.get('id', ''),
+            item.get('width', 0),
+            item.get('height', 0),
+            item.get('thickness', 0),
+            item.get('material', ''),
+            item.get('rotatable', True)
+        )
+
+        if key in item_map:
+            # Duplicate found - merge by adding quantities
+            item_map[key]['quantity'] += item.get('quantity', 1)
+        else:
+            # New unique item - create a copy
+            item_map[key] = item.copy()
+
+    return list(item_map.values())
+
+
 @app.route('/')
 def index():
     """Render the main page."""
@@ -45,6 +86,15 @@ def api_solve():
 
         if not problem_data:
             return jsonify({"error": "No problem data provided"}), 400
+
+        # Deduplicate items before solving
+        if 'items' in problem_data:
+            original_count = len(problem_data['items'])
+            problem_data['items'] = deduplicate_items(problem_data['items'])
+            deduplicated_count = len(problem_data['items'])
+
+            if original_count != deduplicated_count:
+                print(f"Deduplicated items: {original_count} -> {deduplicated_count}")
 
         # Get time limit from parameters or use default
         time_limit = problem_data.get("parameters", {}).get("timeLimit", 5.0)
@@ -445,6 +495,87 @@ def download_template():
         traceback.print_exc()
         return jsonify({
             "error": f"Failed to generate template: {error_msg}"
+        }), 500
+
+
+@app.route('/api/export-products', methods=['POST'])
+def export_products():
+    """
+    Export product list to Excel file.
+
+    Expects JSON with products array.
+    Returns Excel file with same format as template.
+    """
+    try:
+        data = request.get_json()
+        products = data.get('products', [])
+
+        if not products:
+            return jsonify({"error": "No products provided"}), 400
+
+        # Create workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Products"
+
+        # Define headers (same as template)
+        headers = ['Name', 'Code', 'Width', 'Height', 'Thickness', 'Color', 'Qty', 'Grain']
+
+        # Style for header
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # Write headers
+        for col_num, header in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+
+        # Write product data
+        for row_num, product in enumerate(products, start=2):
+            ws.cell(row=row_num, column=1, value=product.get('name', ''))
+            ws.cell(row=row_num, column=2, value=product.get('code', ''))
+            ws.cell(row=row_num, column=3, value=product.get('width', ''))
+            ws.cell(row=row_num, column=4, value=product.get('height', ''))
+            ws.cell(row=row_num, column=5, value=product.get('thickness', ''))
+            ws.cell(row=row_num, column=6, value=product.get('color', ''))
+            ws.cell(row=row_num, column=7, value=product.get('qty', 1))
+            ws.cell(row=row_num, column=8, value=product.get('grain', 'mixed'))
+
+        # Set column widths (same as template)
+        column_widths = {
+            'A': 20,  # Name
+            'B': 12,  # Code
+            'C': 10,  # Width
+            'D': 10,  # Height
+            'E': 12,  # Thickness
+            'F': 15,  # Color
+            'G': 8,   # Qty
+            'H': 12   # Grain
+        }
+
+        for col, width in column_widths.items():
+            ws.column_dimensions[col].width = width
+
+        # Save to BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='product_list.xlsx'
+        )
+
+    except Exception as e:
+        error_msg = str(e)
+        traceback.print_exc()
+        return jsonify({
+            "error": f"Failed to export products: {error_msg}"
         }), 500
 
 
