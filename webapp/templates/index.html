@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tessellate - 2D Cutting Stock Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .visualization {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .bin-container {
+            margin-bottom: 30px;
+        }
+
+        .bin-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin-top: 10px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        svg {
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .item-rect {
+            stroke: #333;
+            stroke-width: 2;
+            opacity: 0.8;
+        }
+
+        .item-text {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            fill: white;
+            text-anchor: middle;
+        }
+
+        .cut-line {
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Tessellate</h1>
+            <p>World-Class 2D Guillotine Cutting Stock Optimizer</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">NP-Hard Problem | Real-Time Solution | Industrial-Grade Quality</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Input Panel -->
+            <div class="panel">
+                <h2>📝 Problem Input</h2>
+
+                <div class="button-group">
+                    <button class="btn-success" onclick="loadExample()">Load Example</button>
+                    <button class="btn-secondary" onclick="clearInput()">Clear</button>
+                </div>
+
+                <div class="input-section">
+                    <label for="problemInput">Problem JSON:</label>
+                    <textarea id="problemInput" placeholder='Enter problem in JSON format...
+
+Example:
+{
+  "items": [...],
+  "bins": [...],
+  "parameters": {...}
+}'></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="solveProblem()">🚀 Solve Problem</button>
+                </div>
+
+                <div id="status"></div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel">
+                <h2>📊 Results & Visualization</h2>
+
+                <div id="metricsContainer" style="display: none;">
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="metricBins">-</div>
+                            <div class="metric-label">Bins Used</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="metricUtil">-</div>
+                            <div class="metric-label">Utilization</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="metricTime">-</div>
+                            <div class="metric-label">Time (s)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="metricAlgo">-</div>
+                            <div class="metric-label">Algorithm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="visualization"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadExample() {
+            try {
+                const response = await fetch('/api/example');
+                const example = await response.json();
+                document.getElementById('problemInput').value = JSON.stringify(example, null, 2);
+                showStatus('Example loaded successfully!', 'success');
+            } catch (error) {
+                showStatus('Failed to load example: ' + error.message, 'error');
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('problemInput').value = '';
+            document.getElementById('visualization').innerHTML = '';
+            document.getElementById('metricsContainer').style.display = 'none';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        async function solveProblem() {
+            const input = document.getElementById('problemInput').value;
+
+            if (!input.trim()) {
+                showStatus('Please enter a problem or load an example', 'error');
+                return;
+            }
+
+            try {
+                const problemData = JSON.parse(input);
+
+                // Show loading
+                document.getElementById('visualization').innerHTML = '<div class="loading"><div class="spinner"></div><p>Solving problem...</p></div>';
+                document.getElementById('status').innerHTML = '';
+
+                const response = await fetch('/api/solve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(problemData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to solve problem');
+                }
+
+                const solution = await response.json();
+
+                // Display results
+                displayResults(solution);
+                showStatus('Problem solved successfully!', 'success');
+
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+                document.getElementById('visualization').innerHTML = '';
+            }
+        }
+
+        function displayResults(solution) {
+            // Update metrics
+            document.getElementById('metricsContainer').style.display = 'block';
+            document.getElementById('metricBins').textContent = solution.metadata.binsUsed;
+            document.getElementById('metricUtil').textContent = (solution.metadata.utilization * 100).toFixed(1) + '%';
+            document.getElementById('metricTime').textContent = solution.metadata.executionTime.toFixed(3);
+            document.getElementById('metricAlgo').textContent = solution.metadata.algorithmName.split('-')[0];
+
+            // Visualize bins
+            const vizContainer = document.getElementById('visualization');
+            vizContainer.innerHTML = '';
+
+            solution.bins.forEach((bin, index) => {
+                const binDiv = document.createElement('div');
+                binDiv.className = 'bin-container';
+
+                const title = document.createElement('div');
+                title.className = 'bin-title';
+                title.textContent = `Bin ${bin.binId + 1} - ${bin.binType} (${(bin.utilization * 100).toFixed(1)}% utilization)`;
+                binDiv.appendChild(title);
+
+                const svg = createBinVisualization(bin);
+                binDiv.appendChild(svg);
+
+                vizContainer.appendChild(binDiv);
+            });
+        }
+
+        function createBinVisualization(bin) {
+            const scale = 0.15; // Scale down for display
+            const width = bin.width * scale;
+            const height = bin.height * scale;
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width + 40);
+            svg.setAttribute('height', height + 40);
+            svg.setAttribute('viewBox', `0 0 ${width + 40} ${height + 40}`);
+
+            // Bin outline
+            const binRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            binRect.setAttribute('x', 20);
+            binRect.setAttribute('y', 20);
+            binRect.setAttribute('width', width);
+            binRect.setAttribute('height', height);
+            binRect.setAttribute('fill', '#f8f9fa');
+            binRect.setAttribute('stroke', '#333');
+            binRect.setAttribute('stroke-width', 2);
+            svg.appendChild(binRect);
+
+            // Color palette for items
+            const colors = [
+                '#3498db', '#e74c3c', '#2ecc71', '#f39c12',
+                '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
+            ];
+
+            // Draw items
+            bin.items.forEach((item, index) => {
+                const itemRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                itemRect.setAttribute('x', 20 + item.x * scale);
+                itemRect.setAttribute('y', 20 + item.y * scale);
+                itemRect.setAttribute('width', item.width * scale);
+                itemRect.setAttribute('height', item.height * scale);
+                itemRect.setAttribute('fill', colors[index % colors.length]);
+                itemRect.setAttribute('class', 'item-rect');
+                svg.appendChild(itemRect);
+
+                // Item label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', 20 + (item.x + item.width / 2) * scale);
+                text.setAttribute('y', 20 + (item.y + item.height / 2) * scale);
+                text.setAttribute('class', 'item-text');
+                text.textContent = item.itemId + (item.rotated ? ' ↻' : '');
+                svg.appendChild(text);
+            });
+
+            // Draw cuts (if available)
+            if (bin.cuts && bin.cuts.length > 0) {
+                bin.cuts.forEach(cut => {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', 20 + cut.start.x * scale);
+                    line.setAttribute('y1', 20 + cut.start.y * scale);
+                    line.setAttribute('x2', 20 + cut.end.x * scale);
+                    line.setAttribute('y2', 20 + cut.end.y * scale);
+                    line.setAttribute('class', 'cut-line');
+                    svg.appendChild(line);
+                });
+            }
+
+            return svg;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = type;
+            statusDiv.textContent = message;
+        }
+
+        // Load example on page load
+        window.onload = loadExample;
+    </script>
+</body>
+</html>

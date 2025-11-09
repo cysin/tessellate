@@ -1,0 +1,61 @@
+{
+  "name": "Small Example - Cabinet Doors",
+  "description": "7 items (2 non-rotatable, 5 rotatable) for furniture manufacturing",
+  "problem": {
+    "items": [
+      {
+        "id": "I001",
+        "width": 2000,
+        "height": 600,
+        "thickness": 18,
+        "material": "Oak",
+        "quantity": 2,
+        "rotatable": false,
+        "description": "Large cabinet doors (vertical grain)"
+      },
+      {
+        "id": "I002",
+        "width": 900,
+        "height": 600,
+        "thickness": 18,
+        "material": "Oak",
+        "quantity": 2,
+        "rotatable": true,
+        "description": "Top panels"
+      },
+      {
+        "id": "I003",
+        "width": 880,
+        "height": 580,
+        "thickness": 18,
+        "material": "Oak",
+        "quantity": 3,
+        "rotatable": true,
+        "description": "Shelves"
+      }
+    ],
+    "bins": [
+      {
+        "id": "STD-1220x2440",
+        "width": 1220,
+        "height": 2440,
+        "thickness": 18,
+        "material": "Oak",
+        "available": -1,
+        "description": "Standard plywood sheet"
+      }
+    ],
+    "parameters": {
+      "kerf": 3.0,
+      "utilizationThreshold": 0.78,
+      "timeLimit": 5.0
+    }
+  },
+  "metadata": {
+    "difficulty": "easy",
+    "optimal_bins": 2,
+    "expected_utilization": 0.82,
+    "total_items": 7,
+    "material_groups": 1
+  }
+}

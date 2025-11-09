@@ -1,0 +1,14 @@
+# Core dependencies for tessellate library
+# No external dependencies required - uses only Python standard library
+
+# For web application
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# For testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# For benchmarking
+numpy>=1.24.0
+matplotlib>=3.7.0
