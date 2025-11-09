@@ -976,7 +976,98 @@
         }
 
         function createBoardGroupCard(bin, groupNum, offsetInfo = null) {
-            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+            // Professional color palette - muted, distinguishable colors
+            const professionalColors = [
+                '#5B9BD5',  // Calm blue
+                '#ED7D31',  // Burnt orange
+                '#70AD47',  // Olive green
+                '#FFC000',  // Golden yellow
+                '#9E78C2',  // Soft purple
+                '#4472C4',  // Deep blue
+                '#E26E6E',  // Coral red
+                '#43AA8B',  // Teal
+                '#F9A03F',  // Amber
+                '#577590'   // Steel blue
+            ];
+
+            // Function to get consistent color for a part based on its characteristics
+            function getPartColor(itemIds, width, height, material) {
+                // Create a signature for this part type
+                const signature = `${Math.round(width)}-${Math.round(height)}-${material}`;
+
+                // Simple hash function
+                let hash = 0;
+                for (let i = 0; i < signature.length; i++) {
+                    hash = ((hash << 5) - hash) + signature.charCodeAt(i);
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+
+                // Get color index from hash
+                const colorIndex = Math.abs(hash) % professionalColors.length;
+                return professionalColors[colorIndex];
+            }
+
+            // Function to wrap text if it's too long for the available width
+            function createWrappedText(x, y, width, height, label) {
+                const maxWidth = width * 0.9; // Use 90% of width for text
+                const fontSize = Math.max(20, Math.min(width, height) / 15);
+                const lineHeight = fontSize * 1.2;
+
+                // Estimate character width (rough approximation)
+                const charWidth = fontSize * 0.6;
+                const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+
+                if (label.length <= maxCharsPerLine) {
+                    // Single line
+                    return `<text x="${x}" y="${y}" class="item-text" style="font-size: ${fontSize}px;">${label}</text>`;
+                }
+
+                // Split label for wrapping
+                const parts = label.split('/');
+                let lines = [];
+
+                if (parts.length > 1 && parts.every(p => p.length > maxCharsPerLine)) {
+                    // Multiple long parts, put each on separate line
+                    lines = parts;
+                } else if (parts.length > 1) {
+                    // Try to fit parts with separator
+                    let currentLine = '';
+                    parts.forEach((part, idx) => {
+                        const testLine = currentLine ? `${currentLine}/${part}` : part;
+                        if (testLine.length <= maxCharsPerLine) {
+                            currentLine = testLine;
+                        } else {
+                            if (currentLine) lines.push(currentLine);
+                            currentLine = part;
+                        }
+                    });
+                    if (currentLine) lines.push(currentLine);
+                } else {
+                    // Single long label, split by characters
+                    const words = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
+                    lines = words;
+                }
+
+                // Limit to 3 lines max
+                if (lines.length > 3) {
+                    lines = lines.slice(0, 2);
+                    lines.push('...');
+                }
+
+                // Calculate starting Y to center vertically
+                const totalHeight = lines.length * lineHeight;
+                const startY = y - totalHeight / 2 + lineHeight / 2;
+
+                // Generate tspan elements for each line
+                let textSvg = `<text x="${x}" y="${startY}" class="item-text" style="font-size: ${fontSize}px;">`;
+                lines.forEach((line, idx) => {
+                    const dy = idx === 0 ? 0 : lineHeight;
+                    textSvg += `<tspan x="${x}" dy="${dy}">${line}</tspan>`;
+                });
+                textSvg += `</text>`;
+
+                return textSvg;
+            }
 
             // Backend provides aggregated bin with quantity
             const quantity = bin.quantity || 1;
@@ -1042,9 +1133,9 @@
             });
 
             // Draw one rectangle per unique position
-            let colorIdx = 0;
             itemsByPosition.forEach((posData) => {
-                const color = colors[colorIdx % colors.length];
+                // Get consistent color based on part dimensions and material
+                const color = getPartColor(posData.itemIds, posData.width, posData.height, bin.material);
                 const x = 20 + posData.x;
                 const y = 20 + posData.y;
                 const w = posData.width;
@@ -1056,10 +1147,9 @@
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
-                html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text" style="font-size: ${Math.max(20, Math.min(w, h) / 15)}px;">
-                         ${label}</text>`;
 
-                colorIdx++;
+                // Use text wrapping for long labels
+                html += createWrappedText(x + w/2, y + h/2, w, h, label);
             });
 
             html += `</svg></div>`;
@@ -1144,7 +1234,98 @@
         }
 
         function createBoardCard(bin, boardNum, totalBoards, offsetInfo = null) {
-            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+            // Professional color palette - muted, distinguishable colors
+            const professionalColors = [
+                '#5B9BD5',  // Calm blue
+                '#ED7D31',  // Burnt orange
+                '#70AD47',  // Olive green
+                '#FFC000',  // Golden yellow
+                '#9E78C2',  // Soft purple
+                '#4472C4',  // Deep blue
+                '#E26E6E',  // Coral red
+                '#43AA8B',  // Teal
+                '#F9A03F',  // Amber
+                '#577590'   // Steel blue
+            ];
+
+            // Function to get consistent color for a part based on its characteristics
+            function getPartColor(itemIds, width, height, material) {
+                // Create a signature for this part type
+                const signature = `${Math.round(width)}-${Math.round(height)}-${material}`;
+
+                // Simple hash function
+                let hash = 0;
+                for (let i = 0; i < signature.length; i++) {
+                    hash = ((hash << 5) - hash) + signature.charCodeAt(i);
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+
+                // Get color index from hash
+                const colorIndex = Math.abs(hash) % professionalColors.length;
+                return professionalColors[colorIndex];
+            }
+
+            // Function to wrap text if it's too long for the available width
+            function createWrappedText(x, y, width, height, label) {
+                const maxWidth = width * 0.9; // Use 90% of width for text
+                const fontSize = Math.max(20, Math.min(width, height) / 15);
+                const lineHeight = fontSize * 1.2;
+
+                // Estimate character width (rough approximation)
+                const charWidth = fontSize * 0.6;
+                const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+
+                if (label.length <= maxCharsPerLine) {
+                    // Single line
+                    return `<text x="${x}" y="${y}" class="item-text" style="font-size: ${fontSize}px;">${label}</text>`;
+                }
+
+                // Split label for wrapping
+                const parts = label.split('/');
+                let lines = [];
+
+                if (parts.length > 1 && parts.every(p => p.length > maxCharsPerLine)) {
+                    // Multiple long parts, put each on separate line
+                    lines = parts;
+                } else if (parts.length > 1) {
+                    // Try to fit parts with separator
+                    let currentLine = '';
+                    parts.forEach((part, idx) => {
+                        const testLine = currentLine ? `${currentLine}/${part}` : part;
+                        if (testLine.length <= maxCharsPerLine) {
+                            currentLine = testLine;
+                        } else {
+                            if (currentLine) lines.push(currentLine);
+                            currentLine = part;
+                        }
+                    });
+                    if (currentLine) lines.push(currentLine);
+                } else {
+                    // Single long label, split by characters
+                    const words = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
+                    lines = words;
+                }
+
+                // Limit to 3 lines max
+                if (lines.length > 3) {
+                    lines = lines.slice(0, 2);
+                    lines.push('...');
+                }
+
+                // Calculate starting Y to center vertically
+                const totalHeight = lines.length * lineHeight;
+                const startY = y - totalHeight / 2 + lineHeight / 2;
+
+                // Generate tspan elements for each line
+                let textSvg = `<text x="${x}" y="${startY}" class="item-text" style="font-size: ${fontSize}px;">`;
+                lines.forEach((line, idx) => {
+                    const dy = idx === 0 ? 0 : lineHeight;
+                    textSvg += `<tspan x="${x}" dy="${dy}">${line}</tspan>`;
+                });
+                textSvg += `</text>`;
+
+                return textSvg;
+            }
 
             // Board material and thickness come from the bin itself
             // A board can only have ONE material type - never mixed
@@ -1208,9 +1389,9 @@
             });
 
             // Draw one rectangle per unique position
-            let colorIdx2 = 0;
             itemsByPosition2.forEach((posData) => {
-                const color = colors[colorIdx2 % colors.length];
+                // Get consistent color based on part dimensions and material
+                const color = getPartColor(posData.itemIds, posData.width, posData.height, bin.material);
                 const x = 20 + posData.x;
                 const y = 20 + posData.y;
                 const w = posData.width;
@@ -1222,10 +1403,9 @@
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
-                html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text" style="font-size: ${Math.max(20, Math.min(w, h) / 15)}px;">
-                         ${label}</text>`;
 
-                colorIdx2++;
+                // Use text wrapping for long labels
+                html += createWrappedText(x + w/2, y + h/2, w, h, label);
             });
 
             html += `</svg></div>`;
