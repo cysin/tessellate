@@ -329,8 +329,6 @@
         /* SVG Diagram */
         .cutting-diagram {
             margin: 20px 0;
-            border: 2px solid #ddd;
-            border-radius: 8px;
             background: #fafafa;
         }
 
@@ -1159,12 +1157,12 @@
             const viewBoxHeight = bin.height + padding;
 
             html += `<div class="cutting-diagram">`;
-            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; background: #fff;">`;
+            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; border: 1px solid #ddd; background: #fff;">`;
 
-            // Define grid pattern
+            // Define grid pattern (smaller grid with stronger lines)
             html += `<defs>
-                <pattern id="grid-${groupNum}" width="50" height="50" patternUnits="userSpaceOnUse">
-                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#d0d0d0" stroke-width="0.5"/>
+                <pattern id="grid-${groupNum}" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#a0a0a0" stroke-width="1"/>
                 </pattern>
             </defs>`;
 
