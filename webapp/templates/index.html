@@ -59,32 +59,6 @@
             padding: 30px;
         }
 
-        /* Input Method Toggle */
-        .input-method-toggle {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 30px;
-        }
-
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .radio-group input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
 
         /* Product Table */
         .table-container {
@@ -524,21 +498,29 @@
             <!-- INPUT SECTION -->
             <div class="section-header">📝 INPUT SECTION</div>
 
-            <!-- Input Method Toggle -->
-            <div class="input-method-toggle">
-                <div class="radio-group">
-                    <label>
-                        <input type="radio" name="inputMethod" value="manual" checked onchange="toggleInputMethod()">
-                        Manual Entry
-                    </label>
-                    <label>
-                        <input type="radio" name="inputMethod" value="excel" onchange="toggleInputMethod()">
-                        Excel Upload
-                    </label>
+            <!-- Import from Excel Section -->
+            <div class="excel-upload" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <h3 class="mb-10">📥 Import from Excel:</h3>
+                <div class="file-input-group">
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                    <button class="btn btn-primary" onclick="uploadExcel()">Import</button>
+                    <button class="btn btn-secondary" onclick="downloadTemplate()">Download Template</button>
                 </div>
+                <div style="margin-top: 10px;">
+                    <p class="text-small" style="margin: 5px 0; color: #666;">
+                        <strong>Instructions:</strong>
+                    </p>
+                    <ul class="text-small" style="margin: 5px 0 5px 20px; color: #666; line-height: 1.6;">
+                        <li>Excel file must contain columns: Name, Code, Width, Height, Thickness, Color, Qty, Grain</li>
+                        <li>Imported products will be <strong>added to</strong> the current product list below</li>
+                        <li>Download the template for correct format</li>
+                        <li>Grain values: 'mixed' (rotatable) or 'fixed' (non-rotatable)</li>
+                    </ul>
+                </div>
+                <div id="uploadStatus"></div>
             </div>
 
-            <!-- Manual Entry / Product Table -->
+            <!-- Product Table -->
             <div id="manual-entry-section">
                 <h3 class="mb-10">Product List:</h3>
                 <div class="table-container">
@@ -563,18 +545,6 @@
                     </table>
                 </div>
                 <button class="btn btn-success" onclick="addProductRow()">+ Add Row</button>
-            </div>
-
-            <!-- Excel Upload Section -->
-            <div id="excel-upload-section" class="excel-upload hidden">
-                <h3 class="mb-10">Upload Excel File:</h3>
-                <div class="file-input-group">
-                    <input type="file" id="excelFile" accept=".xlsx,.xls">
-                    <button class="btn btn-primary" onclick="uploadExcel()">Upload</button>
-                    <button class="btn btn-secondary" onclick="downloadTemplate()">Download Template</button>
-                </div>
-                <p class="text-small">Required format: Name, Code, Width, Height, Thickness, Color, Qty, Grain</p>
-                <div id="uploadStatus"></div>
             </div>
 
             <!-- Leftover Materials Section -->
@@ -651,19 +621,6 @@
             addProductRow();
         };
 
-        function toggleInputMethod() {
-            const method = document.querySelector('input[name="inputMethod"]:checked').value;
-            const manualSection = document.getElementById('manual-entry-section');
-            const excelSection = document.getElementById('excel-upload-section');
-
-            if (method === 'manual') {
-                manualSection.classList.remove('hidden');
-                excelSection.classList.add('hidden');
-            } else {
-                manualSection.classList.add('hidden');
-                excelSection.classList.remove('hidden');
-            }
-        }
 
         let rowCounter = 0;
 
@@ -759,16 +716,15 @@
 
                 if (response.ok && data.products) {
                     populateTableFromExcel(data.products);
-                    statusDiv.innerHTML = `<div class="upload-status success">✓ ${data.count} products loaded</div>`;
+                    statusDiv.innerHTML = `<div class="upload-status success">✓ ${data.count} products imported and added to the list below</div>`;
 
                     // Show warnings if any
                     if (data.warnings && data.warnings.length > 0) {
                         statusDiv.innerHTML += `<div class="upload-status warning">Warnings: ${data.warnings.join(', ')}</div>`;
                     }
 
-                    // Switch to manual mode so user can see/edit
-                    document.querySelector('input[name="inputMethod"][value="manual"]').checked = true;
-                    toggleInputMethod();
+                    // Clear file input
+                    fileInput.value = '';
                 } else {
                     statusDiv.innerHTML = `<div class="upload-status error">Error: ${data.error || 'Upload failed'}</div>`;
                 }
@@ -779,8 +735,7 @@
 
         function populateTableFromExcel(products) {
             const tbody = document.getElementById('productTableBody');
-            tbody.innerHTML = ''; // Clear existing rows
-            rowCounter = 0;
+            // Don't clear existing rows - append to them
 
             products.forEach(product => {
                 rowCounter++;
