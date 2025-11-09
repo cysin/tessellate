@@ -832,23 +832,17 @@
                 // TODO: Collect leftover data
             }
 
-            // Create bins for each unique material+thickness combination
-            const binMap = new Map();
-            products.forEach(product => {
-                const key = `${product.material}-${product.thickness}`;
-                if (!binMap.has(key)) {
-                    binMap.set(key, {
-                        id: `Board-${product.material}-${product.thickness}mm`,
-                        width: width,
-                        height: height,
-                        thickness: product.thickness,
-                        material: product.material,
-                        available: -1  // Unlimited
-                    });
-                }
-            });
-
-            const bins = Array.from(binMap.values());
+            // Create single bin type
+            // Note: Material/thickness on items are just labels for organizing output,
+            // not actual constraints. All items can be placed on any board.
+            const bins = [{
+                id: `Board-${height}x${width}`,
+                width: width,
+                height: height,
+                thickness: 18,  // Not used as constraint
+                material: "Standard",  // Not used as constraint
+                available: -1  // Unlimited
+            }];
 
             // Prepare request
             const requestData = {

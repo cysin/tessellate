@@ -358,7 +358,10 @@ class Problem:
 
     def get_compatible_bins(self, item: Item) -> List[Bin]:
         """
-        Get bins compatible with an item (matching thickness and material).
+        Get bins compatible with an item.
+
+        Material and grain are just labels for organizing output, not constraints.
+        Only dimensions matter for physical placement.
 
         Args:
             item: Item to check
@@ -369,5 +372,5 @@ class Problem:
         return [
             bin_type
             for bin_type in self.bins
-            if bin_type.thickness == item.thickness and bin_type.material == item.material
+            if bin_type.width >= item.width and bin_type.height >= item.height
         ]
