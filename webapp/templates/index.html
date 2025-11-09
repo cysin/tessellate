@@ -505,9 +505,9 @@
 
         /* Print Styles for A4 Layout */
         @media print {
-            /* A4 page setup */
+            /* A4 page setup - landscape for better board visualization */
             @page {
-                size: A4 portrait;
+                size: A4 landscape;
                 margin: 8mm 10mm;
             }
 
@@ -627,15 +627,15 @@
                 font-size: 9pt;
             }
 
-            /* SVG size constraints */
+            /* SVG size constraints - adjusted for landscape orientation */
             .cutting-diagram {
                 margin: 5px 0;
-                max-height: 130mm;
+                max-height: 105mm;
                 background: white;
             }
 
             .cutting-diagram svg {
-                max-height: 130mm !important;
+                max-height: 105mm !important;
                 height: auto !important;
                 width: 100% !important;
             }
