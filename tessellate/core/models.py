@@ -232,7 +232,10 @@ class Solution:
 
         Bins are considered identical if they have:
         - Same board specifications (material, thickness, dimensions)
-        - Same items in same positions (identical layout)
+        - Same cutting layout: items with same dimensions, material, and positions
+
+        Note: Item ID/name is NOT considered - parts with identical dimensions
+        and material are treated as the same for cutting purposes.
 
         Returns:
             List of groups, each with {"bins": [...], "quantity": N}
@@ -247,8 +250,10 @@ class Solution:
             board_sig = f"{bp.bin_type.material}-{bp.bin_type.thickness}-{bp.bin_type.width}-{bp.bin_type.height}"
 
             # Include items layout (sorted for consistency)
+            # NOTE: For cutting purposes, only dimensions, material, and position matter
+            # Do NOT use item.id - parts with same dimensions/material are identical for cutting
             items_sig = tuple(sorted([
-                (pi.item.id, pi.x, pi.y, pi.width, pi.height, pi.rotated)
+                (pi.x, pi.y, pi.width, pi.height, pi.item.thickness, pi.item.material, pi.rotated)
                 for pi in bp.items
             ]))
 
