@@ -1150,14 +1150,30 @@
                     </div>
             `;
 
-            // Create SVG diagram (bin already contains the reference layout)
-            // Use real dimensions for viewBox to maintain aspect ratio
+            // Create SVG diagram - use ORIGINAL board dimensions for display
+            // Parts will be offset by the board margin
             const padding = 40;
-            const viewBoxWidth = bin.width + padding;
-            const viewBoxHeight = bin.height + padding;
+
+            // Use original board dimensions if offsets were applied
+            let displayBoardWidth = bin.width;
+            let displayBoardHeight = bin.height;
+            let partOffsetX = 0;
+            let partOffsetY = 0;
+
+            if (offsetInfo && (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0)) {
+                displayBoardWidth = offsetInfo.originalBoardWidth;
+                displayBoardHeight = offsetInfo.originalBoardHeight;
+                // Parts are positioned on the smaller (actual) board, so we need to offset them
+                // by the margin from the edges of the original board
+                partOffsetX = Math.abs(offsetInfo.boardWidthOffset) / 2;
+                partOffsetY = Math.abs(offsetInfo.boardHeightOffset) / 2;
+            }
+
+            const viewBoxWidth = displayBoardWidth + padding;
+            const viewBoxHeight = displayBoardHeight + padding;
 
             html += `<div class="cutting-diagram">`;
-            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; border: 1px solid #ddd; background: #fff;">`;
+            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; background: #fff;">`;
 
             // Define grid pattern (smaller grid with stronger lines)
             html += `<defs>
@@ -1166,8 +1182,8 @@
                 </pattern>
             </defs>`;
 
-            // Board background with grid pattern (shows unused area)
-            html += `<rect x="20" y="20" width="${bin.width}" height="${bin.height}"
+            // Board background with grid pattern (shows unused area) - use ORIGINAL dimensions
+            html += `<rect x="20" y="20" width="${displayBoardWidth}" height="${displayBoardHeight}"
                      fill="url(#grid-${groupNum})" stroke="#000" stroke-width="2"/>`;
 
             // Draw items
@@ -1192,8 +1208,9 @@
             itemsByPosition.forEach((posData) => {
                 // Get consistent color based on part dimensions and material
                 const color = getPartColor(posData.itemIds, posData.width, posData.height, bin.material);
-                const x = 20 + posData.x;
-                const y = 20 + posData.y;
+                // Apply part offset to show margin from board edges
+                const x = 20 + posData.x + partOffsetX;
+                const y = 20 + posData.y + partOffsetY;
                 const w = posData.width;
                 const h = posData.height;
 
@@ -1460,18 +1477,41 @@
                     </div>
             `;
 
-            // Create SVG diagram
-            // Use real dimensions for viewBox to maintain aspect ratio
+            // Create SVG diagram - use ORIGINAL board dimensions for display
+            // Parts will be offset by the board margin
             const padding = 40;
-            const viewBoxWidth = bin.width + padding;
-            const viewBoxHeight = bin.height + padding;
+
+            // Use original board dimensions if offsets were applied
+            let displayBoardWidth = bin.width;
+            let displayBoardHeight = bin.height;
+            let partOffsetX = 0;
+            let partOffsetY = 0;
+
+            if (offsetInfo && (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0)) {
+                displayBoardWidth = offsetInfo.originalBoardWidth;
+                displayBoardHeight = offsetInfo.originalBoardHeight;
+                // Parts are positioned on the smaller (actual) board, so we need to offset them
+                // by the margin from the edges of the original board
+                partOffsetX = Math.abs(offsetInfo.boardWidthOffset) / 2;
+                partOffsetY = Math.abs(offsetInfo.boardHeightOffset) / 2;
+            }
+
+            const viewBoxWidth = displayBoardWidth + padding;
+            const viewBoxHeight = displayBoardHeight + padding;
 
             html += `<div class="cutting-diagram">`;
-            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; border: 1px solid #ddd; background: #fff;">`;
+            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; background: #fff;">`;
 
-            // Bin outline
-            html += `<rect x="20" y="20" width="${bin.width}" height="${bin.height}"
-                     fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
+            // Define grid pattern (smaller grid with stronger lines)
+            html += `<defs>
+                <pattern id="grid-single-${boardNum}" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#a0a0a0" stroke-width="1"/>
+                </pattern>
+            </defs>`;
+
+            // Board background with grid pattern (shows unused area) - use ORIGINAL dimensions
+            html += `<rect x="20" y="20" width="${displayBoardWidth}" height="${displayBoardHeight}"
+                     fill="url(#grid-single-${boardNum})" stroke="#000" stroke-width="2"/>`;
 
             // Draw items
             // Group items by position to handle multiple items with same dimensions at same position
@@ -1495,8 +1535,9 @@
             itemsByPosition2.forEach((posData) => {
                 // Get consistent color based on part dimensions and material
                 const color = getPartColor(posData.itemIds, posData.width, posData.height, bin.material);
-                const x = 20 + posData.x;
-                const y = 20 + posData.y;
+                // Apply part offset to show margin from board edges
+                const x = 20 + posData.x + partOffsetX;
+                const y = 20 + posData.y + partOffsetY;
                 const w = posData.width;
                 const h = posData.height;
 
