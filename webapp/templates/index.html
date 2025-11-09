@@ -1319,34 +1319,45 @@
 
             html += `</svg></div>`;
 
-            // Parts list - count how many times each item appears on ONE representative board
-            // For identical boards (which backend groups together), each item appears on all boards
-            const partsCounts = new Map();
-            const positionsSeen = new Set();  // Track positions to avoid double-counting
-
+            // Parts list - group by POSITION first, then aggregate by itemId
+            // Items with different codes but same dimensions at same position are ONE physical part
+            // First, collect unique positions with all itemIds at each position
+            const positionsMap = new Map();
             bin.items.forEach(item => {
-                // Create unique key for this position
                 const posKey = `${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`;
-                const itemKey = item.itemId;
-
-                // Check if we've already counted this item at this specific position
-                const combinedKey = `${itemKey}-${posKey}`;
-                if (positionsSeen.has(combinedKey)) {
-                    return;  // Skip duplicate - already counted
-                }
-                positionsSeen.add(combinedKey);
-
-                if (!partsCounts.has(itemKey)) {
-                    partsCounts.set(itemKey, {
-                        itemId: item.itemId,
+                if (!positionsMap.has(posKey)) {
+                    positionsMap.set(posKey, {
+                        itemIds: [item.itemId],
                         width: item.width,
                         height: item.height,
-                        rotated: item.rotated,
+                        rotated: item.rotated
+                    });
+                } else {
+                    // Add itemId to this position if not already there
+                    const existing = positionsMap.get(posKey);
+                    if (!existing.itemIds.includes(item.itemId)) {
+                        existing.itemIds.push(item.itemId);
+                    }
+                }
+            });
+
+            // Now count parts by merged itemId (like "CB(L)/CB(R)")
+            const partsCounts = new Map();
+            positionsMap.forEach((posData) => {
+                // Merge itemIds at same position (they're the same physical part)
+                const mergedItemId = posData.itemIds.sort().join('/');
+
+                if (!partsCounts.has(mergedItemId)) {
+                    partsCounts.set(mergedItemId, {
+                        itemId: mergedItemId,
+                        width: posData.width,
+                        height: posData.height,
+                        rotated: posData.rotated,
                         countOnBoard: 1  // Number of this part on one representative board
                     });
                 } else {
-                    // This is the same item at a DIFFERENT position on the same board
-                    partsCounts.get(itemKey).countOnBoard += 1;
+                    // This merged item appears at another position
+                    partsCounts.get(mergedItemId).countOnBoard += 1;
                 }
             });
 
@@ -1369,8 +1380,10 @@
 
             let rowNum = 1;
             partsCounts.forEach((part) => {
-                // Get name from mapping
-                const partName = codeToNameMap[part.itemId] || '';
+                // Handle merged itemIds like "CB(L)/CB(R)"
+                const itemIds = part.itemId.split('/');
+                const partNames = itemIds.map(id => codeToNameMap[id] || '').filter(n => n);
+                const partName = partNames.join('/');
                 const partCode = part.itemId;
 
                 // Calculate original part dimensions
