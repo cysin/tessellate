@@ -1644,9 +1644,20 @@
                 const w = posData.width;
                 const h = posData.height;
 
-                // Get unique item IDs at this position
+                // Get unique item IDs at this position, and map merged IDs to original codes
                 const uniqueIds = [...new Set(posData.itemIds)];
-                const label = uniqueIds.join('/') + (posData.rotated ? ' ↻' : '');
+                const itemMetadata = window.itemMetadata || {};
+                const actualCodes = [];
+                uniqueIds.forEach(id => {
+                    if (itemMetadata[id]) {
+                        // This is a merged ID, get all original codes
+                        itemMetadata[id].codes.forEach(c => actualCodes.push(c.code));
+                    } else {
+                        // Not a merged ID, use as-is
+                        actualCodes.push(id);
+                    }
+                });
+                const label = actualCodes.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
@@ -1706,18 +1717,27 @@
             partsCounts.forEach((part) => {
                 const mergedId = part.itemId;
 
-                // Check if this is a merged item from our grouping
-                if (itemMetadata[mergedId] && itemMetadata[mergedId].codes.length > 1) {
+                // Split the mergedId if it's a combination (e.g., "merged_1/merged_2")
+                const individualIds = mergedId.split('/');
+
+                // Collect all codes from all individual merged IDs
+                const allCodes = [];
+                individualIds.forEach(id => {
+                    if (itemMetadata[id]) {
+                        allCodes.push(...itemMetadata[id].codes);
+                    }
+                });
+
+                if (allCodes.length > 1) {
                     // This is a merged item - split it proportionally
-                    const codes = itemMetadata[mergedId].codes;
                     const totalOnBoard = part.countOnBoard;
-                    const totalQty = codes.reduce((sum, c) => sum + c.qty, 0);
+                    const totalQty = allCodes.reduce((sum, c) => sum + c.qty, 0);
 
                     let distributed = 0;
-                    codes.forEach((codeInfo, idx) => {
+                    allCodes.forEach((codeInfo, idx) => {
                         const proportion = codeInfo.qty / totalQty;
                         // Last code gets remainder to ensure total matches
-                        const qtyOnBoard = (idx === codes.length - 1)
+                        const qtyOnBoard = (idx === allCodes.length - 1)
                             ? totalOnBoard - distributed
                             : Math.round(proportion * totalOnBoard);
 
@@ -1736,9 +1756,9 @@
                             distributed += qtyOnBoard;
                         }
                     });
-                } else if (itemMetadata[mergedId] && itemMetadata[mergedId].codes.length === 1) {
+                } else if (allCodes.length === 1) {
                     // Not merged (only one code) - display as-is
-                    const codeInfo = itemMetadata[mergedId].codes[0];
+                    const codeInfo = allCodes[0];
                     displayParts.push({
                         itemId: codeInfo.code,
                         name: codeInfo.name,
@@ -2094,9 +2114,20 @@
                 const w = posData.width;
                 const h = posData.height;
 
-                // Get unique item IDs at this position
+                // Get unique item IDs at this position, and map merged IDs to original codes
                 const uniqueIds = [...new Set(posData.itemIds)];
-                const label = uniqueIds.join('/') + (posData.rotated ? ' ↻' : '');
+                const itemMetadata = window.itemMetadata || {};
+                const actualCodes = [];
+                uniqueIds.forEach(id => {
+                    if (itemMetadata[id]) {
+                        // This is a merged ID, get all original codes
+                        itemMetadata[id].codes.forEach(c => actualCodes.push(c.code));
+                    } else {
+                        // Not a merged ID, use as-is
+                        actualCodes.push(id);
+                    }
+                });
+                const label = actualCodes.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
