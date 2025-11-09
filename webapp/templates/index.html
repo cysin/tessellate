@@ -868,7 +868,16 @@
                 const solution = await response.json();
 
                 if (response.ok) {
-                    displayResults(solution);
+                    // Pass offset info for display
+                    const offsetInfo = {
+                        boardWidthOffset,
+                        boardHeightOffset,
+                        partWidthOffset,
+                        partHeightOffset,
+                        originalBoardWidth: width,
+                        originalBoardHeight: height
+                    };
+                    displayResults(solution, offsetInfo);
                 } else {
                     resultsContent.innerHTML = `<div class="alert alert-error">Error: ${solution.error || 'Failed to generate plan'}</div>`;
                 }
@@ -907,7 +916,10 @@
                         quantity: quantity,
                         rotatable: grain === 'mixed', // mixed = rotatable
                         name: name,
-                        code: code
+                        code: code,
+                        // Store original dimensions for display
+                        originalWidth: width,
+                        originalHeight: height
                     });
                 }
             }
@@ -915,7 +927,7 @@
             return products;
         }
 
-        function displayResults(solution) {
+        function displayResults(solution, offsetInfo = null) {
             const resultsContent = document.getElementById('resultsContent');
 
             let html = '';
@@ -943,7 +955,7 @@
 
             // Display each board
             solution.bins.forEach((bin, index) => {
-                html += createBoardCard(bin, index + 1, solution.bins.length);
+                html += createBoardCard(bin, index + 1, solution.bins.length, offsetInfo);
             });
 
             // Display unplaced items if any
@@ -961,7 +973,7 @@
             resultsContent.innerHTML = html;
         }
 
-        function createBoardCard(bin, boardNum, totalBoards) {
+        function createBoardCard(bin, boardNum, totalBoards, offsetInfo = null) {
             const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
 
             // Board material and thickness come from the bin itself
@@ -969,10 +981,27 @@
             const boardMaterial = bin.material;
             const boardThickness = Math.round(bin.thickness);
 
+            // Calculate original and adjusted board dimensions
+            let boardTitle;
+            if (offsetInfo) {
+                const origHeight = Math.round(offsetInfo.originalBoardHeight);
+                const origWidth = Math.round(offsetInfo.originalBoardWidth);
+                const adjHeight = Math.round(bin.height);
+                const adjWidth = Math.round(bin.width);
+
+                if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
+                    boardTitle = `BOARD ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial} (Adjusted: ${adjHeight} x ${adjWidth})`;
+                } else {
+                    boardTitle = `BOARD ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial}`;
+                }
+            } else {
+                boardTitle = `BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness} (H x W x T) ${boardMaterial}`;
+            }
+
             let html = `
                 <div class="board-card">
                     <div class="board-header">
-                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness} (H x W x T) ${boardMaterial}</div>
+                        <div class="board-title">${boardTitle}</div>
                         <div class="board-util">Utilization: ${(bin.utilization * 100).toFixed(1)}%</div>
                     </div>
             `;
@@ -1024,11 +1053,23 @@
             `;
 
             bin.items.forEach((item, idx) => {
+                // Calculate original part dimensions
+                let dimText;
+                if (offsetInfo && (offsetInfo.partWidthOffset !== 0 || offsetInfo.partHeightOffset !== 0)) {
+                    const origWidth = Math.round(item.width - offsetInfo.partWidthOffset);
+                    const origHeight = Math.round(item.height - offsetInfo.partHeightOffset);
+                    const adjWidth = Math.round(item.width);
+                    const adjHeight = Math.round(item.height);
+                    dimText = `${origWidth} x ${origHeight} mm (Adjusted: ${adjWidth} x ${adjHeight})${item.rotated ? ' (rotated)' : ''}`;
+                } else {
+                    dimText = `${item.width.toFixed(0)} x ${item.height.toFixed(0)} mm${item.rotated ? ' (rotated)' : ''}`;
+                }
+
                 html += `
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${item.itemId}</td>
-                        <td>${item.width.toFixed(0)} x ${item.height.toFixed(0)} mm${item.rotated ? ' (rotated)' : ''}</td>
+                        <td>${dimText}</td>
                         <td>${item.material}</td>
                         <td>${item.thickness} mm</td>
                         <td>1 pc</td>
