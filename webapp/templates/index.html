@@ -1776,9 +1776,22 @@
                 }
             });
 
+            // Aggregate displayParts by unique code (sum quantities for same code)
+            const aggregatedParts = new Map();
+            displayParts.forEach(part => {
+                const key = part.code;
+                if (aggregatedParts.has(key)) {
+                    // Same code already exists, add to its count
+                    aggregatedParts.get(key).countOnBoard += part.countOnBoard;
+                } else {
+                    // New code, add it
+                    aggregatedParts.set(key, { ...part });
+                }
+            });
+
             // Parts list - split into two columns for print optimization
-            // Use displayParts instead of partsCounts for rendering
-            const partsArray = displayParts;
+            // Use aggregated parts for rendering
+            const partsArray = Array.from(aggregatedParts.values());
             const midpoint = Math.ceil(partsArray.length / 2);
             const leftParts = partsArray.slice(0, midpoint);
             const rightParts = partsArray.slice(midpoint);
