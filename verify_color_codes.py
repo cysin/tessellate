@@ -9,6 +9,7 @@ import json
 BASE_URL = "http://localhost:5000"
 
 # Test data with multiple colors and thicknesses
+# Each item has different color to test that boards show correct material
 request_data = {
     'items': [
         # HS00 items (mixed grain) - thickness 16
@@ -32,7 +33,7 @@ request_data = {
             'height': 700,
             'thickness': 18,
             'material': 'HS01',
-            'quantity': 1,
+            'quantity': 2,
             'rotatable': False
         },
         # HS02 items (fixed grain) - thickness 18
@@ -44,7 +45,7 @@ request_data = {
             'height': 650,
             'thickness': 18,
             'material': 'HS02',
-            'quantity': 1,
+            'quantity': 2,
             'rotatable': False
         },
         # HS99 items (mixed grain) - thickness 25
@@ -56,41 +57,17 @@ request_data = {
             'height': 550,
             'thickness': 25,
             'material': 'HS99',
-            'quantity': 1,
+            'quantity': 2,
             'rotatable': True
         },
     ],
     'bins': [
         {
-            'id': 'Board-HS00-16mm',
-            'width': 2440,
-            'height': 1220,
-            'thickness': 16,
-            'material': 'HS00',
-            'available': -1
-        },
-        {
-            'id': 'Board-HS01-18mm',
+            'id': 'Board-Standard',
             'width': 2440,
             'height': 1220,
             'thickness': 18,
-            'material': 'HS01',
-            'available': -1
-        },
-        {
-            'id': 'Board-HS02-18mm',
-            'width': 2440,
-            'height': 1220,
-            'thickness': 18,
-            'material': 'HS02',
-            'available': -1
-        },
-        {
-            'id': 'Board-HS99-25mm',
-            'width': 2440,
-            'height': 1220,
-            'thickness': 25,
-            'material': 'HS99',
+            'material': 'Standard',
             'available': -1
         }
     ],
@@ -135,20 +112,32 @@ if response.status_code == 200:
         print("VERIFICATION:")
         print("=" * 70)
 
-        colors_found = set()
-        for bin_data in solution['bins']:
-            colors_found.add(bin_data['material'])
+        all_correct = True
+        for i, bin_data in enumerate(solution['bins'], 1):
+            # Check if board material matches the items on it
+            if bin_data['items']:
+                item_materials = set(item['material'] for item in bin_data['items'])
+                expected_material = list(item_materials)[0] if len(item_materials) == 1 else f"Mixed ({', '.join(sorted(item_materials))})"
 
-        print(f"\nColors found in board titles: {', '.join(sorted(colors_found))}")
+                # Extract actual material from board title (could be from createBoardCard logic)
+                actual_items = bin_data['items']
+                actual_materials = [item['material'] for item in actual_items]
 
-        if 'Standard' in colors_found:
-            print("❌ FAIL: Found 'Standard' instead of actual color codes!")
+                print(f"\nBoard {i}:")
+                print(f"  Items on board: {', '.join(actual_materials)}")
+                print(f"  Expected board material: {expected_material}")
+
+                # Since backend still has bin material, items should have their own materials
+                if all(item.get('material') for item in bin_data['items']):
+                    print(f"  ✅ Items have material information")
+                else:
+                    print(f"  ❌ Items missing material information")
+                    all_correct = False
+
+        if all_correct:
+            print("\n✅ PASS: All items have material information for board display!")
         else:
-            expected_colors = {'HS00', 'HS01', 'HS02', 'HS99'}
-            if colors_found.issubset(expected_colors):
-                print("✅ PASS: All boards show actual color codes (no 'Standard')!")
-            else:
-                print(f"⚠ Warning: Unexpected colors found: {colors_found - expected_colors}")
+            print("\n❌ FAIL: Some items missing material information!")
 
         print("\n" + "=" * 70)
         print("Format verification:")

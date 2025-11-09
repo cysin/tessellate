@@ -973,10 +973,18 @@
         function createBoardCard(bin, boardNum, totalBoards) {
             const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
 
+            // Determine actual material and thickness from items on this board
+            const materials = new Set(bin.items.map(item => item.material));
+            const thicknesses = new Set(bin.items.map(item => item.thickness));
+
+            // Use the material/thickness of items on the board
+            const boardMaterial = materials.size === 1 ? Array.from(materials)[0] : `Mixed (${Array.from(materials).join(', ')})`;
+            const boardThickness = thicknesses.size === 1 ? Math.round(Array.from(thicknesses)[0]) : `${Math.round(bin.thickness)}`;
+
             let html = `
                 <div class="board-card">
                     <div class="board-header">
-                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${Math.round(bin.thickness)} (H x W x T) ${bin.material}</div>
+                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness} (H x W x T) ${boardMaterial}</div>
                         <div class="board-util">Utilization: ${(bin.utilization * 100).toFixed(1)}%</div>
                     </div>
             `;
@@ -1019,6 +1027,8 @@
                                 <th>#</th>
                                 <th>Name/Code</th>
                                 <th>Dimensions</th>
+                                <th>Material</th>
+                                <th>Thickness</th>
                                 <th>Qty</th>
                             </tr>
                         </thead>
@@ -1031,6 +1041,8 @@
                         <td>${idx + 1}</td>
                         <td>${item.itemId}</td>
                         <td>${item.width.toFixed(0)} x ${item.height.toFixed(0)} mm${item.rotated ? ' (rotated)' : ''}</td>
+                        <td>${item.material}</td>
+                        <td>${item.thickness} mm</td>
                         <td>1 pc</td>
                     </tr>
                 `;

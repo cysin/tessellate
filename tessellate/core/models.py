@@ -254,6 +254,8 @@ class Solution:
                             "width": pi.width,
                             "height": pi.height,
                             "rotated": pi.rotated,
+                            "material": pi.item.material,
+                            "thickness": pi.item.thickness,
                         }
                         for pi in bp.items
                     ],
