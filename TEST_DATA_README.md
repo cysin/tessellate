@@ -64,11 +64,16 @@ The script simulates realistic wardrobe orders by:
 6. **Drawers** - 0-4 sets (optional)
 7. **Other Components** - 2-5 miscellaneous items
 
-### Grain Direction
+### Grain Orientation
 
-The script intelligently assigns grain orientation:
-- **Fixed** - Side panels and doors (vertical grain matters)
-- **Mixed or Fixed** - Shelves and back panels (can vary)
+Grain orientation is determined by the color code of each component:
+
+| Color Codes | Grain | Description |
+|------------|-------|-------------|
+| HS00, HS99, HS98, HS97 | **mixed** | Can rotate 90 degrees |
+| HS01, HS02, HS03 | **fixed** | Cannot rotate - maintains single direction |
+
+This ensures that components with certain finishes (HS00, HS99, HS98, HS97) can be freely rotated for optimal board utilization, while others (HS01, HS02, HS03) maintain their grain direction.
 
 ### Component Categories
 
@@ -107,6 +112,6 @@ Generated files are compatible with the webapp's Excel upload format:
 
 | Name | Code | Width | Height | Thickness | Color | Qty | Grain |
 |------|------|-------|--------|-----------|-------|-----|-------|
-| 柜体侧板（L） | CB(L)-HS00-2434-574-16 | 2434 | 574 | 16 | HS00 | 1 | fixed |
+| 柜体侧板（L） | CB(L)-HS00-2434-574-16 | 2434 | 574 | 16 | HS00 | 1 | mixed |
 
 All dimensions are in millimeters.

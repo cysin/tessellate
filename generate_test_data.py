@@ -5,6 +5,10 @@ Generate test Excel files from components_data.csv.
 This script simulates realistic wardrobe orders by selecting components
 from the CSV file and generating Excel files with random quantities.
 
+Grain orientation is determined by color code:
+- HS00, HS99, HS98, HS97 -> 'mixed' (can rotate 90 degrees)
+- HS01, HS02, HS03 -> 'fixed' (cannot rotate)
+
 Usage:
     python generate_test_data.py <number_of_files>
 
@@ -166,14 +170,13 @@ def create_excel_file(order, filename):
 
     # Write data
     for row_num, (component, qty) in enumerate(order, start=2):
-        # Determine grain based on component type
-        # Vertical panels typically have fixed grain, shelves can be mixed
-        if '侧板' in component.name or '门板' in component.name:
-            grain = 'fixed'  # Vertical panels need grain direction
-        elif '层隔板' in component.name or '背板' in component.name:
-            grain = random.choice(['fixed', 'mixed'])  # Shelves can vary
-        else:
-            grain = random.choice(['fixed', 'mixed', 'mixed'])  # Bias towards mixed
+        # Determine grain based on color code
+        # HS00, HS99, HS98, HS97 -> mixed (can rotate)
+        # HS01, HS02, HS03 -> fixed (cannot rotate)
+        if component.color in ['HS00', 'HS99', 'HS98', 'HS97']:
+            grain = 'mixed'
+        else:  # HS01, HS02, HS03 or any other color
+            grain = 'fixed'
 
         ws.cell(row=row_num, column=1, value=component.name)
         ws.cell(row=row_num, column=2, value=component.code)
