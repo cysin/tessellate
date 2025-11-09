@@ -226,8 +226,46 @@ class Solution:
         """Primary objective: number of bins used."""
         return self.num_bins()
 
+    def _group_identical_bins(self) -> List[Dict]:
+        """
+        Group identical bins together for aggregated output.
+
+        Bins are considered identical if they have:
+        - Same board specifications (material, thickness, dimensions)
+        - Same items in same positions (identical layout)
+
+        Returns:
+            List of groups, each with {"bins": [...], "quantity": N}
+        """
+        from collections import defaultdict
+
+        groups_map = defaultdict(list)
+
+        for bp in self.bins:
+            # Create signature for this bin
+            # Include board spec
+            board_sig = f"{bp.bin_type.material}-{bp.bin_type.thickness}-{bp.bin_type.width}-{bp.bin_type.height}"
+
+            # Include items layout (sorted for consistency)
+            items_sig = tuple(sorted([
+                (pi.item.id, pi.x, pi.y, pi.width, pi.height, pi.rotated)
+                for pi in bp.items
+            ]))
+
+            signature = (board_sig, items_sig)
+            groups_map[signature].append(bp)
+
+        # Convert to list format
+        return [
+            {"bins": bins, "quantity": len(bins)}
+            for bins in groups_map.values()
+        ]
+
     def to_dict(self) -> dict:
         """Convert solution to dictionary format (JSON-serializable)."""
+        # Group identical bins
+        bin_groups = self._group_identical_bins()
+
         return {
             "metadata": {
                 "objectiveValue": self.num_bins(),
@@ -239,13 +277,14 @@ class Solution:
             },
             "bins": [
                 {
-                    "binId": bp.bin_id,
-                    "binType": bp.bin_type.id,
-                    "width": bp.bin_type.width,
-                    "height": bp.bin_type.height,
-                    "thickness": bp.bin_type.thickness,
-                    "material": bp.bin_type.material,
-                    "utilization": bp.utilization(),
+                    "binId": group["bins"][0].bin_id,
+                    "binType": group["bins"][0].bin_type.id,
+                    "width": group["bins"][0].bin_type.width,
+                    "height": group["bins"][0].bin_type.height,
+                    "thickness": group["bins"][0].bin_type.thickness,
+                    "material": group["bins"][0].bin_type.material,
+                    "utilization": sum(bp.utilization() for bp in group["bins"]) / len(group["bins"]),
+                    "quantity": group["quantity"],  # Number of identical boards
                     "items": [
                         {
                             "itemId": pi.item.id,
@@ -257,7 +296,7 @@ class Solution:
                             "material": pi.item.material,
                             "thickness": pi.item.thickness,
                         }
-                        for pi in bp.items
+                        for pi in group["bins"][0].items
                     ],
                     "cuts": [
                         {
@@ -266,10 +305,10 @@ class Solution:
                             "start": {"x": cut.start[0], "y": cut.start[1]},
                             "end": {"x": cut.end[0], "y": cut.end[1]},
                         }
-                        for cut in bp.cuts
+                        for cut in group["bins"][0].cuts
                     ],
                 }
-                for bp in self.bins
+                for group in bin_groups
             ],
             "unplaced": [
                 {

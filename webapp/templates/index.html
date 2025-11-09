@@ -953,37 +953,10 @@
                 </div>
             `;
 
-            // Group boards by configuration (board spec + parts layout)
-            const boardGroups = new Map();
-            solution.bins.forEach((bin) => {
-                // Create signature for parts configuration
-                const partsSignature = bin.items
-                    .map(item => `${item.itemId}-${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`)
-                    .sort()
-                    .join('|');
-
-                // Key includes board spec AND parts configuration
-                const key = `${bin.material}-${bin.thickness}-${Math.round(bin.width)}-${Math.round(bin.height)}-${partsSignature}`;
-
-                if (!boardGroups.has(key)) {
-                    boardGroups.set(key, {
-                        material: bin.material,
-                        thickness: bin.thickness,
-                        width: bin.width,
-                        height: bin.height,
-                        boards: [],
-                        totalUtilization: 0
-                    });
-                }
-                const group = boardGroups.get(key);
-                group.boards.push(bin);
-                group.totalUtilization += bin.utilization;
-            });
-
+            // Backend returns already-aggregated bins with quantities
             // Display each board group
-            let groupIndex = 1;
-            boardGroups.forEach((group) => {
-                html += createBoardGroupCard(group, groupIndex++, offsetInfo);
+            solution.bins.forEach((bin, index) => {
+                html += createBoardGroupCard(bin, index + 1, offsetInfo);
             });
 
             // Display unplaced items if any
@@ -1001,21 +974,22 @@
             resultsContent.innerHTML = html;
         }
 
-        function createBoardGroupCard(group, groupNum, offsetInfo = null) {
+        function createBoardGroupCard(bin, groupNum, offsetInfo = null) {
             const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
 
-            const quantity = group.boards.length;
-            const boardMaterial = group.material;
-            const boardThickness = Math.round(group.thickness);
-            const avgUtilization = group.totalUtilization / quantity;
+            // Backend provides aggregated bin with quantity
+            const quantity = bin.quantity || 1;
+            const boardMaterial = bin.material;
+            const boardThickness = Math.round(bin.thickness);
+            const avgUtilization = bin.utilization;
 
             // Calculate original and adjusted board dimensions
             let boardTitle;
             if (offsetInfo) {
                 const origHeight = Math.round(offsetInfo.originalBoardHeight);
                 const origWidth = Math.round(offsetInfo.originalBoardWidth);
-                const adjHeight = Math.round(group.height);
-                const adjWidth = Math.round(group.width);
+                const adjHeight = Math.round(bin.height);
+                const adjWidth = Math.round(bin.width);
 
                 if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
                     boardTitle = `BOARD x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial} (Actual: ${adjHeight} x ${adjWidth})`;
@@ -1023,7 +997,7 @@
                     boardTitle = `BOARD x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial}`;
                 }
             } else {
-                boardTitle = `BOARD x${quantity} - ${Math.round(group.height)} x ${Math.round(group.width)} x ${boardThickness} (H x W x T) ${boardMaterial}`;
+                boardTitle = `BOARD x${quantity} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness} (H x W x T) ${boardMaterial}`;
             }
 
             let html = `
@@ -1034,22 +1008,21 @@
                     </div>
             `;
 
-            // Create SVG diagram for first board as reference
-            const firstBoard = group.boards[0];
+            // Create SVG diagram (bin already contains the reference layout)
             const scale = 0.15;
-            const svgWidth = group.width * scale + 40;
-            const svgHeight = group.height * scale + 40;
+            const svgWidth = bin.width * scale + 40;
+            const svgHeight = bin.height * scale + 40;
 
             html += `<div class="cutting-diagram">`;
             html += `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">Reference layout (Board 1 of ${quantity}):</p>`;
             html += `<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
 
             // Bin outline
-            html += `<rect x="20" y="20" width="${group.width * scale}" height="${group.height * scale}"
+            html += `<rect x="20" y="20" width="${bin.width * scale}" height="${bin.height * scale}"
                      fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
 
-            // Draw items from first board
-            firstBoard.items.forEach((item, idx) => {
+            // Draw items
+            bin.items.forEach((item, idx) => {
                 const color = colors[idx % colors.length];
                 const x = 20 + item.x * scale;
                 const y = 20 + item.y * scale;
@@ -1064,24 +1037,24 @@
 
             html += `</svg></div>`;
 
-            // Aggregate parts list across all boards
+            // Parts list - aggregate across all identical boards
+            // Backend provides reference board items, multiply by quantity
             const partsCounts = new Map();
-            group.boards.forEach(board => {
-                board.items.forEach(item => {
-                    const key = `${item.itemId}-${item.width}-${item.height}-${item.rotated}`;
-                    if (!partsCounts.has(key)) {
-                        partsCounts.set(key, {
-                            itemId: item.itemId,
-                            width: item.width,
-                            height: item.height,
-                            material: item.material,
-                            thickness: item.thickness,
-                            rotated: item.rotated,
-                            count: 0
-                        });
-                    }
-                    partsCounts.get(key).count++;
-                });
+            bin.items.forEach(item => {
+                const key = `${item.itemId}-${item.width}-${item.height}-${item.rotated}`;
+                if (!partsCounts.has(key)) {
+                    partsCounts.set(key, {
+                        itemId: item.itemId,
+                        width: item.width,
+                        height: item.height,
+                        material: item.material,
+                        thickness: item.thickness,
+                        rotated: item.rotated,
+                        count: quantity  // Multiply by number of identical boards
+                    });
+                } else {
+                    partsCounts.get(key).count += quantity;
+                }
             });
 
             // Parts list
