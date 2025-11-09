@@ -1159,12 +1159,18 @@
             const viewBoxHeight = bin.height + padding;
 
             html += `<div class="cutting-diagram">`;
-            html += `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">Reference layout (Board 1 of ${quantity}):</p>`;
-            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; border: 1px solid #ddd; background: #fff;">`;
+            html += `<svg width="100%" height="auto" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" preserveAspectRatio="xMidYMid meet" style="max-width: 100%; background: #fff;">`;
 
-            // Bin outline
+            // Define grid pattern
+            html += `<defs>
+                <pattern id="grid-${groupNum}" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#d0d0d0" stroke-width="0.5"/>
+                </pattern>
+            </defs>`;
+
+            // Board background with grid pattern (shows unused area)
             html += `<rect x="20" y="20" width="${bin.width}" height="${bin.height}"
-                     fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
+                     fill="url(#grid-${groupNum})"/>`;
 
             // Draw items
             // Group items by position to handle aggregated boards with different item IDs at same position
