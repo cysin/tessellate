@@ -1112,7 +1112,10 @@
                         <tbody>
             `;
 
+            // Calculate total quantity
+            let totalQuantity = 0;
             sortedBoards.forEach((board) => {
+                totalQuantity += board.quantity;
                 const dimensions = `${board.height} × ${board.width}`;
                 html += `
                     <tr style="border-bottom: 1px solid #ddd;">
@@ -1123,6 +1126,14 @@
                     </tr>
                 `;
             });
+
+            // Add total row
+            html += `
+                    <tr style="border-top: 2px solid #333; background-color: #f8f9fa; font-weight: bold;">
+                        <td colspan="3" style="padding: 10px; border: 1px solid #ddd; text-align: right;">Total</td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">${totalQuantity}</td>
+                    </tr>
+            `;
 
             html += `
                         </tbody>
