@@ -243,6 +243,8 @@ class Solution:
                     "binType": bp.bin_type.id,
                     "width": bp.bin_type.width,
                     "height": bp.bin_type.height,
+                    "thickness": bp.bin_type.thickness,
+                    "material": bp.bin_type.material,
                     "utilization": bp.utilization(),
                     "items": [
                         {

@@ -969,7 +969,7 @@
             let html = `
                 <div class="board-card">
                     <div class="board-header">
-                        <div class="board-title">BOARD ${boardNum} - ${bin.binType} (${bin.width} x ${bin.height})</div>
+                        <div class="board-title">BOARD ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${Math.round(bin.thickness)} (H x W) ${bin.material}</div>
                         <div class="board-util">Utilization: ${(bin.utilization * 100).toFixed(1)}%</div>
                     </div>
             `;
