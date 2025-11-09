@@ -337,6 +337,19 @@
             margin: 20px 0;
         }
 
+        /* Parts table double column layout */
+        .parts-table-container {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        .parts-table-left,
+        .parts-table-right {
+            flex: 1;
+            min-width: 0;
+        }
+
         .parts-list h4 {
             margin-bottom: 10px;
             color: #667eea;
@@ -486,6 +499,209 @@
             text-anchor: middle;
             dominant-baseline: middle;
             font-weight: 500;
+        }
+
+        /* Print Styles for A4 Layout */
+        @media print {
+            /* A4 page setup */
+            @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+            }
+
+            /* Hide web-only elements */
+            header,
+            .action-buttons,
+            button,
+            input,
+            select,
+            .upload-status,
+            .excel-upload,
+            .leftover-section,
+            .board-config,
+            .section-header,
+            #manual-entry-section,
+            .file-input-group {
+                display: none !important;
+            }
+
+            /* Body and container */
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+
+            .container {
+                max-width: 100%;
+                background: white;
+                box-shadow: none;
+            }
+
+            .content {
+                padding: 0;
+            }
+
+            /* Results summary page */
+            .results-header {
+                padding: 5px 0;
+                margin-bottom: 10px;
+            }
+
+            .results-header p {
+                font-size: 9pt;
+                margin-bottom: 8px;
+            }
+
+            .results-stats {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 10px;
+            }
+
+            .stat-item {
+                min-width: auto;
+            }
+
+            .stat-value {
+                font-size: 14pt;
+            }
+
+            .stat-label {
+                font-size: 8pt;
+            }
+
+            /* Boards summary table */
+            .board-summary-table {
+                page-break-after: always;
+                margin-bottom: 0;
+            }
+
+            .board-summary-table h3 {
+                font-size: 12pt;
+                margin-bottom: 8px;
+            }
+
+            .board-summary-table table {
+                font-size: 9pt;
+                margin: 10px 0;
+            }
+
+            .board-summary-table th,
+            .board-summary-table td {
+                padding: 5px !important;
+            }
+
+            /* Board cards - each starts on new page */
+            .board-card {
+                page-break-before: always;
+                page-break-inside: avoid;
+                margin: 0;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            /* Compact board header */
+            .board-header {
+                padding: 5px 0;
+                margin-bottom: 8px;
+                border-bottom: 2px solid #333;
+            }
+
+            .board-title {
+                font-size: 11pt;
+                font-weight: bold;
+            }
+
+            .board-util {
+                font-size: 9pt;
+            }
+
+            /* SVG size constraints */
+            .cutting-diagram {
+                margin: 8px 0;
+                max-height: 125mm;
+                background: white;
+            }
+
+            .cutting-diagram svg {
+                max-height: 125mm !important;
+                height: auto !important;
+                width: 100% !important;
+            }
+
+            /* Parts list - double column layout */
+            .parts-list {
+                margin-top: 8px;
+            }
+
+            .parts-list h4 {
+                font-size: 10pt;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+
+            /* Container for two tables side by side */
+            .parts-table-container {
+                display: flex;
+                gap: 10px;
+                justify-content: space-between;
+            }
+
+            .parts-table-left,
+            .parts-table-right {
+                width: 48%;
+                flex-shrink: 0;
+            }
+
+            .parts-list table {
+                font-size: 7pt;
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            .parts-list th {
+                font-size: 8pt;
+                padding: 3px !important;
+                background: #f0f0f0 !important;
+                border: 1px solid #333 !important;
+                font-weight: bold;
+            }
+
+            .parts-list td {
+                padding: 2px 3px !important;
+                font-size: 7pt;
+                border: 1px solid #333 !important;
+            }
+
+            /* Ensure black text for printing */
+            .board-card,
+            .board-card * {
+                color: #000 !important;
+            }
+
+            /* Keep SVG colors and patterns */
+            svg,
+            svg *,
+            svg rect[fill^="#"],
+            svg rect[fill^="url"] {
+                color: initial !important;
+                fill: initial !important;
+                stroke: initial !important;
+            }
+
+            /* Ensure borders are visible */
+            table,
+            th,
+            td {
+                border-color: #333 !important;
+            }
+
+            /* Hide unplaced items warning in print */
+            .alert-error {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -1453,25 +1669,15 @@
                 }
             });
 
-            // Parts list
-            html += `
-                <div class="parts-list">
-                    <h4>Parts across all ${quantity} board(s):</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Code</th>
-                                <th>Dimensions</th>
-                                <th>Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
+            // Parts list - split into two columns for print optimization
+            // Convert partsCounts to array
+            const partsArray = Array.from(partsCounts.values());
+            const midpoint = Math.ceil(partsArray.length / 2);
+            const leftParts = partsArray.slice(0, midpoint);
+            const rightParts = partsArray.slice(midpoint);
 
-            let rowNum = 1;
-            partsCounts.forEach((part) => {
+            // Helper function to create part row HTML
+            const createPartRow = (part, rowNum) => {
                 // Handle merged itemIds like "CB(L)/CB(R)"
                 const itemIds = part.itemId.split('/');
                 const partNames = itemIds.map(id => codeToNameMap[id] || '').filter(n => n);
@@ -1491,24 +1697,60 @@
                 }
 
                 // Calculate quantity: countOnBoard × totalBoards = total
-                // For identical boards, each item appears on ALL boards in the group
                 const total = part.countOnBoard * quantity;
                 const qtyText = `${part.countOnBoard} × ${quantity} = ${total}`;
 
-                html += `
+                return `
                     <tr>
-                        <td>${rowNum++}</td>
+                        <td>${rowNum}</td>
                         <td>${partName}</td>
                         <td>${partCode}</td>
                         <td>${dimText}</td>
                         <td>${qtyText}</td>
                     </tr>
                 `;
-            });
+            };
 
             html += `
-                        </tbody>
-                    </table>
+                <div class="parts-list">
+                    <h4>Parts across all ${quantity} board(s):</h4>
+                    <div class="parts-table-container">
+                        <!-- Left table -->
+                        <div class="parts-table-left">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Code</th>
+                                        <th>Dimensions</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${leftParts.map((part, idx) => createPartRow(part, idx + 1)).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Right table -->
+                        <div class="parts-table-right">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Code</th>
+                                        <th>Dimensions</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rightParts.map((part, idx) => createPartRow(part, midpoint + idx + 1)).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             `;
 
