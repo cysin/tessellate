@@ -596,6 +596,30 @@
                         <input type="number" id="efficiency" value="0.78" step="0.01" min="0" max="1">
                     </div>
                 </div>
+                <div class="config-row">
+                    <div class="config-item">
+                        <label>Board Width Offset (mm):</label>
+                        <input type="number" id="boardWidthOffset" value="-4" step="1">
+                        <span class="text-small">Applied to board width</span>
+                    </div>
+                    <div class="config-item">
+                        <label>Board Height Offset (mm):</label>
+                        <input type="number" id="boardHeightOffset" value="-4" step="1">
+                        <span class="text-small">Applied to board height</span>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-item">
+                        <label>Part Width Offset (mm):</label>
+                        <input type="number" id="partWidthOffset" value="-1" step="1">
+                        <span class="text-small">Applied to all part widths</span>
+                    </div>
+                    <div class="config-item">
+                        <label>Part Height Offset (mm):</label>
+                        <input type="number" id="partHeightOffset" value="-1" step="1">
+                        <span class="text-small">Applied to all part heights</span>
+                    </div>
+                </div>
                 <div class="generate-btn-container">
                     <button class="btn btn-primary generate-btn" onclick="generateCuttingPlan()">
                         ▶ Generate Cutting Plan
@@ -763,19 +787,29 @@
         }
 
         async function generateCuttingPlan() {
-            // Collect product data
-            const products = collectProductData();
-            if (!products || products.length === 0) {
-                alert('Please add at least one product');
-                return;
-            }
-
-            // Collect board configuration
+            // Collect board configuration and offsets
             const boardSizeStr = document.getElementById('boardSize').value;
             // Parse as height x width (e.g., "1220x2440" means height=1220, width=2440)
             const [height, width] = boardSizeStr.split('x').map(Number);
             const kerf = parseFloat(document.getElementById('sawKerf').value);
             const threshold = parseFloat(document.getElementById('efficiency').value);
+
+            // Get offset values
+            const boardWidthOffset = parseFloat(document.getElementById('boardWidthOffset').value) || 0;
+            const boardHeightOffset = parseFloat(document.getElementById('boardHeightOffset').value) || 0;
+            const partWidthOffset = parseFloat(document.getElementById('partWidthOffset').value) || 0;
+            const partHeightOffset = parseFloat(document.getElementById('partHeightOffset').value) || 0;
+
+            // Apply board offsets
+            const actualBoardWidth = width + boardWidthOffset;
+            const actualBoardHeight = height + boardHeightOffset;
+
+            // Collect product data with part offsets applied
+            const products = collectProductData(partWidthOffset, partHeightOffset);
+            if (!products || products.length === 0) {
+                alert('Please add at least one product');
+                return;
+            }
 
             // Collect leftover materials if enabled
             const leftoverMaterials = [];
@@ -792,8 +826,8 @@
                 if (!binMap.has(key)) {
                     binMap.set(key, {
                         id: `Board-${product.material}-${product.thickness}mm`,
-                        width: width,
-                        height: height,
+                        width: actualBoardWidth,
+                        height: actualBoardHeight,
                         thickness: product.thickness,
                         material: product.material,
                         available: -1  // Unlimited
@@ -843,7 +877,7 @@
             }
         }
 
-        function collectProductData() {
+        function collectProductData(partWidthOffset = 0, partHeightOffset = 0) {
             const tbody = document.getElementById('productTableBody');
             const rows = tbody.getElementsByTagName('tr');
             const products = [];
@@ -860,10 +894,14 @@
                 const grain = cells[8].querySelector('select').value;
 
                 if (name && code && width > 0 && height > 0 && thickness > 0 && quantity > 0) {
+                    // Apply part offsets to dimensions
+                    const actualWidth = width + partWidthOffset;
+                    const actualHeight = height + partHeightOffset;
+
                     products.push({
                         id: code,
-                        width: width,
-                        height: height,
+                        width: actualWidth,
+                        height: actualHeight,
                         thickness: thickness,
                         material: color || "Wood",
                         quantity: quantity,
