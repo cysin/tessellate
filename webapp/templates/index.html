@@ -1010,12 +1010,21 @@
             // Function to wrap text if it's too long for the available width
             function createWrappedText(x, y, width, height, label) {
                 const maxWidth = width * 0.9; // Use 90% of width for text
-                const fontSize = Math.max(20, Math.min(width, height) / 15);
+
+                // Adjust font size for narrow parts to fit more text
+                let fontSize = Math.max(20, Math.min(width, height) / 15);
+
+                // For narrow parts, use smaller font to show more text
+                if (width < 300) {
+                    fontSize = Math.max(16, width / 20);
+                }
+
                 const lineHeight = fontSize * 1.2;
 
-                // Estimate character width (rough approximation)
-                const charWidth = fontSize * 0.6;
-                const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+                // Estimate character width (use 0.7 for Chinese/wide characters, 0.6 for ASCII)
+                const hasChinese = /[\u4e00-\u9fa5]/.test(label);
+                const charWidth = hasChinese ? fontSize * 0.7 : fontSize * 0.6;
+                const maxCharsPerLine = Math.max(5, Math.floor(maxWidth / charWidth));
 
                 if (label.length <= maxCharsPerLine) {
                     // Single line
@@ -1043,15 +1052,53 @@
                     });
                     if (currentLine) lines.push(currentLine);
                 } else {
-                    // Single long label, split by characters
-                    const words = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
-                    lines = words;
+                    // Single long label - try to split at delimiter characters
+                    const delimiters = ['-', '_', ' '];
+                    let bestSplit = null;
+
+                    // Try splitting at delimiters
+                    for (const delim of delimiters) {
+                        if (label.includes(delim)) {
+                            const segments = label.split(delim);
+                            let tempLines = [];
+                            let currentLine = '';
+
+                            segments.forEach((segment, idx) => {
+                                const sep = idx === 0 ? '' : delim;
+                                const testLine = currentLine + sep + segment;
+
+                                if (testLine.length <= maxCharsPerLine || currentLine === '') {
+                                    currentLine = testLine;
+                                } else {
+                                    tempLines.push(currentLine);
+                                    currentLine = segment;
+                                }
+                            });
+                            if (currentLine) tempLines.push(currentLine);
+
+                            if (!bestSplit || tempLines.length < bestSplit.length) {
+                                bestSplit = tempLines;
+                            }
+                        }
+                    }
+
+                    // Use best split if found, otherwise split by characters
+                    if (bestSplit) {
+                        lines = bestSplit;
+                    } else {
+                        lines = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
+                    }
                 }
 
-                // Limit to 3 lines max
-                if (lines.length > 3) {
-                    lines = lines.slice(0, 2);
-                    lines.push('...');
+                // Calculate max lines based on part height
+                const maxLines = Math.max(3, Math.floor(height / lineHeight) - 1);
+
+                // Truncate if too many lines
+                if (lines.length > maxLines) {
+                    lines = lines.slice(0, maxLines - 1);
+                    // Show last segment instead of just "..."
+                    const lastLine = lines[lines.length - 1];
+                    lines[lines.length - 1] = lastLine.length > 8 ? lastLine.substring(0, maxCharsPerLine - 3) + '...' : lastLine;
                 }
 
                 // Calculate starting Y to center vertically
@@ -1268,12 +1315,21 @@
             // Function to wrap text if it's too long for the available width
             function createWrappedText(x, y, width, height, label) {
                 const maxWidth = width * 0.9; // Use 90% of width for text
-                const fontSize = Math.max(20, Math.min(width, height) / 15);
+
+                // Adjust font size for narrow parts to fit more text
+                let fontSize = Math.max(20, Math.min(width, height) / 15);
+
+                // For narrow parts, use smaller font to show more text
+                if (width < 300) {
+                    fontSize = Math.max(16, width / 20);
+                }
+
                 const lineHeight = fontSize * 1.2;
 
-                // Estimate character width (rough approximation)
-                const charWidth = fontSize * 0.6;
-                const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+                // Estimate character width (use 0.7 for Chinese/wide characters, 0.6 for ASCII)
+                const hasChinese = /[\u4e00-\u9fa5]/.test(label);
+                const charWidth = hasChinese ? fontSize * 0.7 : fontSize * 0.6;
+                const maxCharsPerLine = Math.max(5, Math.floor(maxWidth / charWidth));
 
                 if (label.length <= maxCharsPerLine) {
                     // Single line
@@ -1301,15 +1357,53 @@
                     });
                     if (currentLine) lines.push(currentLine);
                 } else {
-                    // Single long label, split by characters
-                    const words = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
-                    lines = words;
+                    // Single long label - try to split at delimiter characters
+                    const delimiters = ['-', '_', ' '];
+                    let bestSplit = null;
+
+                    // Try splitting at delimiters
+                    for (const delim of delimiters) {
+                        if (label.includes(delim)) {
+                            const segments = label.split(delim);
+                            let tempLines = [];
+                            let currentLine = '';
+
+                            segments.forEach((segment, idx) => {
+                                const sep = idx === 0 ? '' : delim;
+                                const testLine = currentLine + sep + segment;
+
+                                if (testLine.length <= maxCharsPerLine || currentLine === '') {
+                                    currentLine = testLine;
+                                } else {
+                                    tempLines.push(currentLine);
+                                    currentLine = segment;
+                                }
+                            });
+                            if (currentLine) tempLines.push(currentLine);
+
+                            if (!bestSplit || tempLines.length < bestSplit.length) {
+                                bestSplit = tempLines;
+                            }
+                        }
+                    }
+
+                    // Use best split if found, otherwise split by characters
+                    if (bestSplit) {
+                        lines = bestSplit;
+                    } else {
+                        lines = label.match(new RegExp(`.{1,${maxCharsPerLine}}`, 'g')) || [label];
+                    }
                 }
 
-                // Limit to 3 lines max
-                if (lines.length > 3) {
-                    lines = lines.slice(0, 2);
-                    lines.push('...');
+                // Calculate max lines based on part height
+                const maxLines = Math.max(3, Math.floor(height / lineHeight) - 1);
+
+                // Truncate if too many lines
+                if (lines.length > maxLines) {
+                    lines = lines.slice(0, maxLines - 1);
+                    // Show last segment instead of just "..."
+                    const lastLine = lines[lines.length - 1];
+                    lines[lines.length - 1] = lastLine.length > 8 ? lastLine.substring(0, maxCharsPerLine - 3) + '...' : lastLine;
                 }
 
                 // Calculate starting Y to center vertically
