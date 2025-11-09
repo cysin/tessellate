@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tessellate - 2D Cutting Stock Optimizer</title>
+    <title>Furniture Component Cutting Plan</title>
     <style>
         * {
             margin: 0;
@@ -13,100 +13,142 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             color: #333;
-            min-height: 100vh;
-            padding: 20px;
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
+            min-height: 100vh;
         }
 
-        .header {
+        /* Header */
+        header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px;
             text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
         }
 
-        .header p {
-            font-size: 1.1em;
+        header .subtitle {
+            font-size: 1em;
             opacity: 0.9;
         }
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        /* Section Headers */
+        .section-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #667eea;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        /* Main Content */
+        .content {
             padding: 30px;
         }
 
-        .panel {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-        }
-
-        .panel h2 {
+        /* Input Method Toggle */
+        .input-method-toggle {
             margin-bottom: 20px;
-            color: #667eea;
-            font-size: 1.5em;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-
-        .input-section {
-            margin-bottom: 20px;
-        }
-
-        .input-section label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 400px;
             padding: 15px;
-            border: 2px solid #ddd;
+            background: #f8f9fa;
             border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            resize: vertical;
         }
 
-        textarea:focus {
+        .radio-group {
+            display: flex;
+            gap: 30px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .radio-group input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Product Table */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        td input, td select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        td input:focus, td select:focus {
             outline: none;
             border-color: #667eea;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
         }
 
-        button {
-            flex: 1;
-            padding: 15px 30px;
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
             font-size: 1em;
             font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
             transition: all 0.3s;
         }
 
@@ -138,85 +180,250 @@
             background: #218838;
         }
 
-        .results {
-            margin-top: 20px;
-        }
-
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+        /* Excel Upload Section */
+        .excel-upload {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
             margin-bottom: 20px;
         }
 
-        .metric-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: center;
+        .file-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
         }
 
-        .metric-value {
-            font-size: 2em;
+        .upload-status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .upload-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .upload-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Leftover Materials */
+        .leftover-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        /* Board Configuration */
+        .board-config {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .config-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .config-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .config-item input, .config-item select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .generate-btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .generate-btn {
+            font-size: 1.1em;
+            padding: 15px 50px;
+        }
+
+        /* Results Section */
+        #results-section {
+            display: none;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 3px solid #667eea;
+        }
+
+        .results-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .results-stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
             font-weight: bold;
             color: #667eea;
-            margin-bottom: 5px;
         }
 
-        .metric-label {
-            font-size: 0.9em;
+        .stat-label {
             color: #666;
+            font-size: 0.9em;
         }
 
-        .visualization {
+        /* Board Card */
+        .board-card {
             background: white;
-            border-radius: 8px;
-            padding: 20px;
-            overflow-x: auto;
-        }
-
-        .bin-container {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
             margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .bin-title {
+        .board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .board-title {
+            font-size: 1.3em;
             font-weight: 600;
-            margin-bottom: 10px;
             color: #333;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #f5c6cb;
-            margin-top: 10px;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #c3e6cb;
-            margin-top: 10px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
+        .board-util {
+            font-size: 1.1em;
             color: #667eea;
             font-weight: 600;
         }
 
+        /* SVG Diagram */
+        .cutting-diagram {
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        /* Parts List */
+        .parts-list {
+            margin: 20px 0;
+        }
+
+        .parts-list h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .parts-list table {
+            min-width: auto;
+        }
+
+        .parts-list th {
+            background: #f8f9fa;
+            color: #333;
+            font-size: 0.85em;
+        }
+
+        .parts-list td {
+            font-size: 0.9em;
+        }
+
+        /* Leftover Info */
+        .leftover-info {
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+
+        .leftover-info h4 {
+            margin-bottom: 8px;
+            color: #856404;
+        }
+
+        .leftover-info ul {
+            margin-left: 20px;
+        }
+
+        /* Material Summary */
+        .material-summary {
+            background: #e7f3ff;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .material-summary h3 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
@@ -226,9 +433,62 @@
             100% { transform: rotate(360deg); }
         }
 
-        svg {
-            border: 2px solid #ddd;
-            border-radius: 4px;
+        /* Alerts */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+
+            .config-row {
+                flex-direction: column;
+            }
+
+            .results-stats {
+                flex-direction: column;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .text-small {
+            font-size: 0.85em;
+            color: #666;
         }
 
         .item-rect {
@@ -243,246 +503,533 @@
             fill: white;
             text-anchor: middle;
         }
-
-        .cut-line {
-            stroke: #e74c3c;
-            stroke-width: 2;
-            stroke-dasharray: 5, 5;
-            opacity: 0.6;
-        }
-
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🎯 Tessellate</h1>
-            <p>World-Class 2D Guillotine Cutting Stock Optimizer</p>
-            <p style="font-size: 0.9em; margin-top: 10px;">NP-Hard Problem | Real-Time Solution | Industrial-Grade Quality</p>
-        </div>
+        <!-- Header -->
+        <header>
+            <h1>🎯 Furniture Component Cutting Plan</h1>
+            <p class="subtitle">(Unit: mm)</p>
+        </header>
 
-        <div class="main-content">
-            <!-- Input Panel -->
-            <div class="panel">
-                <h2>📝 Problem Input</h2>
+        <!-- Main Content -->
+        <div class="content">
+            <!-- INPUT SECTION -->
+            <div class="section-header">📝 INPUT SECTION</div>
 
-                <div class="button-group">
-                    <button class="btn-success" onclick="loadExample()">Load Example</button>
-                    <button class="btn-secondary" onclick="clearInput()">Clear</button>
+            <!-- Input Method Toggle -->
+            <div class="input-method-toggle">
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="inputMethod" value="manual" checked onchange="toggleInputMethod()">
+                        Manual Entry
+                    </label>
+                    <label>
+                        <input type="radio" name="inputMethod" value="excel" onchange="toggleInputMethod()">
+                        Excel Upload
+                    </label>
                 </div>
-
-                <div class="input-section">
-                    <label for="problemInput">Problem JSON:</label>
-                    <textarea id="problemInput" placeholder='Enter problem in JSON format...
-
-Example:
-{
-  "items": [...],
-  "bins": [...],
-  "parameters": {...}
-}'></textarea>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-primary" onclick="solveProblem()">🚀 Solve Problem</button>
-                </div>
-
-                <div id="status"></div>
             </div>
 
-            <!-- Results Panel -->
-            <div class="panel">
-                <h2>📊 Results & Visualization</h2>
+            <!-- Manual Entry / Product Table -->
+            <div id="manual-entry-section">
+                <h3 class="mb-10">Product List:</h3>
+                <div class="table-container">
+                    <table id="productTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px">#</th>
+                                <th style="width: 150px">Name</th>
+                                <th style="width: 100px">Code</th>
+                                <th style="width: 100px">Length</th>
+                                <th style="width: 100px">Width</th>
+                                <th style="width: 80px">Thick</th>
+                                <th style="width: 120px">Color</th>
+                                <th style="width: 60px">Qty</th>
+                                <th style="width: 120px">Grain</th>
+                                <th style="width: 60px">X</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <!-- Rows will be added dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-success" onclick="addProductRow()">+ Add Row</button>
+            </div>
 
-                <div id="metricsContainer" style="display: none;">
-                    <div class="metric-grid">
-                        <div class="metric-card">
-                            <div class="metric-value" id="metricBins">-</div>
-                            <div class="metric-label">Bins Used</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="metricUtil">-</div>
-                            <div class="metric-label">Utilization</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="metricTime">-</div>
-                            <div class="metric-label">Time (s)</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="metricAlgo">-</div>
-                            <div class="metric-label">Algorithm</div>
-                        </div>
+            <!-- Excel Upload Section -->
+            <div id="excel-upload-section" class="excel-upload hidden">
+                <h3 class="mb-10">Upload Excel File:</h3>
+                <div class="file-input-group">
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                    <button class="btn btn-primary" onclick="uploadExcel()">Upload</button>
+                    <button class="btn btn-secondary" onclick="downloadTemplate()">Download Template</button>
+                </div>
+                <p class="text-small">Required format: Name, Code, Length, Width, Thickness, Color, Qty, Grain</p>
+                <div id="uploadStatus"></div>
+            </div>
+
+            <!-- Leftover Materials Section -->
+            <div class="leftover-section">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="useLeftover" onchange="toggleLeftover()">
+                    Use leftover materials from stock
+                </label>
+                <div id="leftover-inputs" class="hidden">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Length</th>
+                                    <th>Width</th>
+                                    <th>Thickness</th>
+                                    <th>Color</th>
+                                    <th>Quantity</th>
+                                    <th>X</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leftoverTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success" onclick="addLeftoverRow()">+ Add Row</button>
+                </div>
+            </div>
+
+            <!-- Board Configuration -->
+            <div class="board-config">
+                <h3 class="mb-10">Board Configuration:</h3>
+                <div class="config-row">
+                    <div class="config-item">
+                        <label>Board Size:</label>
+                        <select id="boardSize">
+                            <option value="1220x2440">4 x 8 ft (1220 x 2440 mm)</option>
+                            <option value="1220x2745">4 x 9 ft (1220 x 2745 mm)</option>
+                            <option value="1525x2440">5 x 8 ft (1525 x 2440 mm)</option>
+                            <option value="1525x3050">5 x 10 ft (1525 x 3050 mm)</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label>Saw Kerf (mm):</label>
+                        <input type="number" id="sawKerf" value="3.5" step="0.1" min="0" max="10">
+                    </div>
+                    <div class="config-item">
+                        <label>Efficiency (0.0 - 1.0):</label>
+                        <input type="number" id="efficiency" value="0.78" step="0.01" min="0" max="1">
                     </div>
                 </div>
+                <div class="generate-btn-container">
+                    <button class="btn btn-primary generate-btn" onclick="generateCuttingPlan()">
+                        ▶ Generate Cutting Plan
+                    </button>
+                </div>
+            </div>
 
-                <div id="visualization"></div>
+            <!-- RESULTS SECTION -->
+            <div id="results-section">
+                <div class="section-header">📊 RESULTS</div>
+                <div id="resultsContent"></div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="scrollToInput()">↑ Back to Input</button>
+                    <button class="btn btn-primary" onclick="printResults()">🖨 Print All</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        async function loadExample() {
-            try {
-                const response = await fetch('/api/example');
-                const example = await response.json();
-                document.getElementById('problemInput').value = JSON.stringify(example, null, 2);
-                showStatus('Example loaded successfully!', 'success');
-            } catch (error) {
-                showStatus('Failed to load example: ' + error.message, 'error');
+        // Initialize with one empty row
+        window.onload = function() {
+            addProductRow();
+        };
+
+        function toggleInputMethod() {
+            const method = document.querySelector('input[name="inputMethod"]:checked').value;
+            const manualSection = document.getElementById('manual-entry-section');
+            const excelSection = document.getElementById('excel-upload-section');
+
+            if (method === 'manual') {
+                manualSection.classList.remove('hidden');
+                excelSection.classList.add('hidden');
+            } else {
+                manualSection.classList.add('hidden');
+                excelSection.classList.remove('hidden');
             }
         }
 
-        function clearInput() {
-            document.getElementById('problemInput').value = '';
-            document.getElementById('visualization').innerHTML = '';
-            document.getElementById('metricsContainer').style.display = 'none';
-            document.getElementById('status').innerHTML = '';
+        let rowCounter = 0;
+
+        function addProductRow() {
+            rowCounter++;
+            const tbody = document.getElementById('productTableBody');
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${rowCounter}</td>
+                <td><input type="text" placeholder="Name"></td>
+                <td><input type="text" placeholder="Code"></td>
+                <td><input type="number" placeholder="Length" min="0"></td>
+                <td><input type="number" placeholder="Width" min="0"></td>
+                <td><input type="number" placeholder="Thick" min="0"></td>
+                <td><input type="text" placeholder="Color"></td>
+                <td><input type="number" placeholder="Qty" min="1" value="1"></td>
+                <td>
+                    <select>
+                        <option value="mixed">Mixed</option>
+                        <option value="uni">Unidirectional</option>
+                    </select>
+                </td>
+                <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
+            `;
         }
 
-        async function solveProblem() {
-            const input = document.getElementById('problemInput').value;
+        function deleteRow(btn) {
+            const row = btn.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            renumberRows();
+        }
 
-            if (!input.trim()) {
-                showStatus('Please enter a problem or load an example', 'error');
+        function renumberRows() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                rows[i].cells[0].textContent = i + 1;
+            }
+        }
+
+        function toggleLeftover() {
+            const checked = document.getElementById('useLeftover').checked;
+            const inputs = document.getElementById('leftover-inputs');
+            if (checked) {
+                inputs.classList.remove('hidden');
+                if (document.getElementById('leftoverTableBody').children.length === 0) {
+                    addLeftoverRow();
+                }
+            } else {
+                inputs.classList.add('hidden');
+            }
+        }
+
+        function addLeftoverRow() {
+            const tbody = document.getElementById('leftoverTableBody');
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><input type="number" placeholder="Length" min="0"></td>
+                <td><input type="number" placeholder="Width" min="0"></td>
+                <td><input type="number" placeholder="Thick" min="0"></td>
+                <td><input type="text" placeholder="Color"></td>
+                <td><input type="number" placeholder="Qty" min="1" value="1"></td>
+                <td><button class="delete-btn" onclick="deleteLeftoverRow(this)">X</button></td>
+            `;
+        }
+
+        function deleteLeftoverRow(btn) {
+            const row = btn.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        async function uploadExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                statusDiv.innerHTML = '<div class="upload-status error">Please select a file</div>';
                 return;
             }
 
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
             try {
-                const problemData = JSON.parse(input);
+                statusDiv.innerHTML = '<div class="upload-status">Uploading...</div>';
 
-                // Show loading
-                document.getElementById('visualization').innerHTML = '<div class="loading"><div class="spinner"></div><p>Solving problem...</p></div>';
-                document.getElementById('status').innerHTML = '';
+                const response = await fetch('/api/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
 
+                const data = await response.json();
+
+                if (data.success) {
+                    populateTableFromExcel(data.products);
+                    statusDiv.innerHTML = `<div class="upload-status success">✓ ${data.count} products loaded</div>`;
+
+                    // Switch to manual mode so user can see/edit
+                    document.querySelector('input[name="inputMethod"][value="manual"]').checked = true;
+                    toggleInputMethod();
+                } else {
+                    statusDiv.innerHTML = `<div class="upload-status error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="upload-status error">Upload failed: ${error.message}</div>`;
+            }
+        }
+
+        function populateTableFromExcel(products) {
+            const tbody = document.getElementById('productTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+            rowCounter = 0;
+
+            products.forEach(product => {
+                rowCounter++;
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${rowCounter}</td>
+                    <td><input type="text" value="${product.name}"></td>
+                    <td><input type="text" value="${product.code}"></td>
+                    <td><input type="number" value="${product.length}"></td>
+                    <td><input type="number" value="${product.width}"></td>
+                    <td><input type="number" value="${product.thickness}"></td>
+                    <td><input type="text" value="${product.color}"></td>
+                    <td><input type="number" value="${product.quantity}"></td>
+                    <td>
+                        <select>
+                            <option value="mixed" ${product.grain === 'mixed' ? 'selected' : ''}>Mixed</option>
+                            <option value="uni" ${product.grain === 'uni' ? 'selected' : ''}>Unidirectional</option>
+                        </select>
+                    </td>
+                    <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
+                `;
+            });
+        }
+
+        async function downloadTemplate() {
+            window.location.href = '/api/download-template';
+        }
+
+        async function generateCuttingPlan() {
+            // Collect product data
+            const products = collectProductData();
+            if (!products || products.length === 0) {
+                alert('Please add at least one product');
+                return;
+            }
+
+            // Collect board configuration
+            const boardSizeStr = document.getElementById('boardSize').value;
+            const [width, height] = boardSizeStr.split('x').map(Number);
+            const kerf = parseFloat(document.getElementById('sawKerf').value);
+            const threshold = parseFloat(document.getElementById('efficiency').value);
+
+            // Collect leftover materials if enabled
+            const leftoverMaterials = [];
+            if (document.getElementById('useLeftover').checked) {
+                // TODO: Collect leftover data
+            }
+
+            // Prepare request
+            const requestData = {
+                items: products,
+                bins: [{
+                    id: `Board-${width}x${height}`,
+                    width: width,
+                    height: height,
+                    thickness: 18, // Default, will be matched per product
+                    material: "Wood",
+                    available: -1
+                }],
+                parameters: {
+                    kerf: kerf,
+                    utilizationThreshold: threshold,
+                    timeLimit: 10.0
+                }
+            };
+
+            // Show loading
+            const resultsSection = document.getElementById('results-section');
+            const resultsContent = document.getElementById('resultsContent');
+            resultsSection.style.display = 'block';
+            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>Generating cutting plan...</p></div>';
+
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            try {
                 const response = await fetch('/api/solve', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(problemData)
+                    body: JSON.stringify(requestData)
                 });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to solve problem');
-                }
 
                 const solution = await response.json();
 
-                // Display results
-                displayResults(solution);
-                showStatus('Problem solved successfully!', 'success');
-
+                if (response.ok) {
+                    displayResults(solution);
+                } else {
+                    resultsContent.innerHTML = `<div class="alert alert-error">Error: ${solution.error || 'Failed to generate plan'}</div>`;
+                }
             } catch (error) {
-                showStatus('Error: ' + error.message, 'error');
-                document.getElementById('visualization').innerHTML = '';
+                resultsContent.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
             }
+        }
+
+        function collectProductData() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            const products = [];
+
+            for (let row of rows) {
+                const cells = row.cells;
+                const name = cells[1].querySelector('input').value.trim();
+                const code = cells[2].querySelector('input').value.trim();
+                const length = parseFloat(cells[3].querySelector('input').value);
+                const width = parseFloat(cells[4].querySelector('input').value);
+                const thickness = parseFloat(cells[5].querySelector('input').value);
+                const color = cells[6].querySelector('input').value.trim();
+                const quantity = parseInt(cells[7].querySelector('input').value);
+                const grain = cells[8].querySelector('select').value;
+
+                if (name && code && length > 0 && width > 0 && thickness > 0 && quantity > 0) {
+                    products.push({
+                        id: code,
+                        width: length, // Note: length maps to width in our system
+                        height: width, // width maps to height
+                        thickness: thickness,
+                        material: color || "Wood",
+                        quantity: quantity,
+                        rotatable: grain === 'mixed', // mixed = rotatable
+                        name: name,
+                        code: code
+                    });
+                }
+            }
+
+            return products;
         }
 
         function displayResults(solution) {
-            // Update metrics
-            document.getElementById('metricsContainer').style.display = 'block';
-            document.getElementById('metricBins').textContent = solution.metadata.binsUsed;
-            document.getElementById('metricUtil').textContent = (solution.metadata.utilization * 100).toFixed(1) + '%';
-            document.getElementById('metricTime').textContent = solution.metadata.executionTime.toFixed(3);
-            document.getElementById('metricAlgo').textContent = solution.metadata.algorithmName.split('-')[0];
+            const resultsContent = document.getElementById('resultsContent');
 
-            // Visualize bins
-            const vizContainer = document.getElementById('visualization');
-            vizContainer.innerHTML = '';
+            let html = '';
 
+            // Results header with stats
+            html += `
+                <div class="results-header">
+                    <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+                    <div class="results-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${solution.metadata.binsUsed || 0}</div>
+                            <div class="stat-label">Total Boards</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${(solution.metadata.utilization * 100).toFixed(1)}%</div>
+                            <div class="stat-label">Average Utilization</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${solution.metadata.executionTime.toFixed(2)}s</div>
+                            <div class="stat-label">Processing Time</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Display each board
             solution.bins.forEach((bin, index) => {
-                const binDiv = document.createElement('div');
-                binDiv.className = 'bin-container';
-
-                const title = document.createElement('div');
-                title.className = 'bin-title';
-                title.textContent = `Bin ${bin.binId + 1} - ${bin.binType} (${(bin.utilization * 100).toFixed(1)}% utilization)`;
-                binDiv.appendChild(title);
-
-                const svg = createBinVisualization(bin);
-                binDiv.appendChild(svg);
-
-                vizContainer.appendChild(binDiv);
-            });
-        }
-
-        function createBinVisualization(bin) {
-            const scale = 0.15; // Scale down for display
-            const width = bin.width * scale;
-            const height = bin.height * scale;
-
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', width + 40);
-            svg.setAttribute('height', height + 40);
-            svg.setAttribute('viewBox', `0 0 ${width + 40} ${height + 40}`);
-
-            // Bin outline
-            const binRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            binRect.setAttribute('x', 20);
-            binRect.setAttribute('y', 20);
-            binRect.setAttribute('width', width);
-            binRect.setAttribute('height', height);
-            binRect.setAttribute('fill', '#f8f9fa');
-            binRect.setAttribute('stroke', '#333');
-            binRect.setAttribute('stroke-width', 2);
-            svg.appendChild(binRect);
-
-            // Color palette for items
-            const colors = [
-                '#3498db', '#e74c3c', '#2ecc71', '#f39c12',
-                '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
-            ];
-
-            // Draw items
-            bin.items.forEach((item, index) => {
-                const itemRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                itemRect.setAttribute('x', 20 + item.x * scale);
-                itemRect.setAttribute('y', 20 + item.y * scale);
-                itemRect.setAttribute('width', item.width * scale);
-                itemRect.setAttribute('height', item.height * scale);
-                itemRect.setAttribute('fill', colors[index % colors.length]);
-                itemRect.setAttribute('class', 'item-rect');
-                svg.appendChild(itemRect);
-
-                // Item label
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', 20 + (item.x + item.width / 2) * scale);
-                text.setAttribute('y', 20 + (item.y + item.height / 2) * scale);
-                text.setAttribute('class', 'item-text');
-                text.textContent = item.itemId + (item.rotated ? ' ↻' : '');
-                svg.appendChild(text);
+                html += createBoardCard(bin, index + 1, solution.bins.length);
             });
 
-            // Draw cuts (if available)
-            if (bin.cuts && bin.cuts.length > 0) {
-                bin.cuts.forEach(cut => {
-                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    line.setAttribute('x1', 20 + cut.start.x * scale);
-                    line.setAttribute('y1', 20 + cut.start.y * scale);
-                    line.setAttribute('x2', 20 + cut.end.x * scale);
-                    line.setAttribute('y2', 20 + cut.end.y * scale);
-                    line.setAttribute('class', 'cut-line');
-                    svg.appendChild(line);
-                });
+            // Display unplaced items if any
+            if (solution.unplaced && solution.unplaced.length > 0) {
+                html += `
+                    <div class="alert alert-error">
+                        <strong>⚠ Warning:</strong> ${solution.unplaced.length} item type(s) could not be placed:
+                        <ul>
+                            ${solution.unplaced.map(item => `<li>${item.itemId}: ${item.quantity} pieces</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
             }
 
-            return svg;
+            resultsContent.innerHTML = html;
         }
 
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.className = type;
-            statusDiv.textContent = message;
+        function createBoardCard(bin, boardNum, totalBoards) {
+            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+
+            let html = `
+                <div class="board-card">
+                    <div class="board-header">
+                        <div class="board-title">BOARD ${boardNum} - ${bin.binType} (${bin.width} x ${bin.height})</div>
+                        <div class="board-util">Utilization: ${(bin.utilization * 100).toFixed(1)}%</div>
+                    </div>
+            `;
+
+            // Create SVG diagram
+            const scale = 0.15;
+            const svgWidth = bin.width * scale + 40;
+            const svgHeight = bin.height * scale + 40;
+
+            html += `<div class="cutting-diagram">`;
+            html += `<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
+
+            // Bin outline
+            html += `<rect x="20" y="20" width="${bin.width * scale}" height="${bin.height * scale}"
+                     fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
+
+            // Draw items
+            bin.items.forEach((item, idx) => {
+                const color = colors[idx % colors.length];
+                const x = 20 + item.x * scale;
+                const y = 20 + item.y * scale;
+                const w = item.width * scale;
+                const h = item.height * scale;
+
+                html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
+                         fill="${color}" class="item-rect"/>`;
+                html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text">
+                         ${item.itemId}${item.rotated ? ' ↻' : ''}</text>`;
+            });
+
+            html += `</svg></div>`;
+
+            // Parts list
+            html += `
+                <div class="parts-list">
+                    <h4>Parts on this board:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name/Code</th>
+                                <th>Dimensions</th>
+                                <th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            bin.items.forEach((item, idx) => {
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${item.itemId}</td>
+                        <td>${item.width.toFixed(0)} x ${item.height.toFixed(0)} mm${item.rotated ? ' (rotated)' : ''}</td>
+                        <td>1 pc</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            html += `</div>`;
+
+            return html;
         }
 
-        // Load example on page load
-        window.onload = loadExample;
+        function scrollToInput() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function printResults() {
+            window.print();
+        }
     </script>
 </body>
 </html>
