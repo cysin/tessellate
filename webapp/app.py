@@ -178,7 +178,7 @@ def upload_excel():
     - Thickness: Thickness in mm
     - Color: Material color/type
     - Qty: Quantity
-    - Grain: Grain direction (horizontal/vertical/mixed)
+    - Grain: Grain orientation (mixed/fixed)
 
     Returns JSON array of products.
     """
@@ -252,8 +252,8 @@ def upload_excel():
 
                 # Validate grain value
                 grain = str(grain).lower().strip()
-                if grain not in ['horizontal', 'vertical', 'mixed']:
-                    errors.append(f"Row {row_num}: Grain must be 'horizontal', 'vertical', or 'mixed', got '{grain}'")
+                if grain not in ['mixed', 'fixed']:
+                    errors.append(f"Row {row_num}: Grain must be 'mixed' or 'fixed', got '{grain}'")
                     continue
 
                 # Add product
@@ -335,7 +335,7 @@ def download_template():
                 'Thickness': 18,
                 'Color': 'Oak',
                 'Qty': 4,
-                'Grain': 'vertical'
+                'Grain': 'fixed'
             },
             {
                 'Name': 'Shelf Board',
@@ -355,7 +355,7 @@ def download_template():
                 'Thickness': 25,
                 'Color': 'Walnut',
                 'Qty': 1,
-                'Grain': 'horizontal'
+                'Grain': 'fixed'
             }
         ]
 
@@ -393,7 +393,7 @@ def download_template():
             ("Thickness", "Board thickness in millimeters"),
             ("Color", "Material type or color (e.g., 'Oak', 'Walnut')"),
             ("Qty", "Quantity needed (whole number)"),
-            ("Grain", "Grain direction: 'horizontal', 'vertical', or 'mixed'"),
+            ("Grain", "Grain orientation: 'mixed' or 'fixed'"),
             ("", ""),
             ("Dimension Guide:", "subheader"),
             ("", ""),
@@ -401,11 +401,10 @@ def download_template():
             ("Height", "Vertical dimension (top to bottom on screen)"),
             ("Example", "Board 1220 x 2440 means Width=2440mm, Height=1220mm"),
             ("", ""),
-            ("Grain Direction Guide:", "subheader"),
+            ("Grain Orientation Guide:", "subheader"),
             ("", ""),
-            ("horizontal", "Grain runs horizontally - cannot rotate"),
-            ("vertical", "Grain runs vertically - cannot rotate"),
-            ("mixed", "No grain constraint - can rotate freely"),
+            ("mixed", "Can rotate 90 degrees - no orientation constraint"),
+            ("fixed", "Cannot rotate - must maintain single direction"),
             ("", ""),
             ("Notes:", "subheader"),
             ("", ""),

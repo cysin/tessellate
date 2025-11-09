@@ -683,8 +683,7 @@
                 <td>
                     <select>
                         <option value="mixed">Mixed</option>
-                        <option value="horizontal">Horizontal</option>
-                        <option value="vertical">Vertical</option>
+                        <option value="fixed">Fixed</option>
                     </select>
                 </td>
                 <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
@@ -798,8 +797,7 @@
                     <td>
                         <select>
                             <option value="mixed" ${product.grain === 'mixed' ? 'selected' : ''}>Mixed</option>
-                            <option value="horizontal" ${product.grain === 'horizontal' ? 'selected' : ''}>Horizontal</option>
-                            <option value="vertical" ${product.grain === 'vertical' ? 'selected' : ''}>Vertical</option>
+                            <option value="fixed" ${product.grain === 'fixed' ? 'selected' : ''}>Fixed</option>
                         </select>
                     </td>
                     <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
