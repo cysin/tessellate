@@ -7,6 +7,7 @@ Tries multiple approaches and returns the best solution.
 import time
 from typing import List
 from tessellate.algorithms.base import PackingAlgorithm
+from tessellate.algorithms.guillotine import GuillotinePacker, SplitRule
 from tessellate.algorithms.maxrects import MaximalRectanglesAlgorithm
 from tessellate.core.models import Problem, Solution
 from tessellate.core.bounds import BoundsCalculator
@@ -49,9 +50,13 @@ class HybridSolver(PackingAlgorithm):
         total_lower_bound = sum(bounds.values()) if bounds else 1
 
         # Try multiple algorithms with different configurations
+        # PRIORITY: Use Guillotine algorithms which GUARANTEE guillotine constraints
         algorithms = [
-            MaximalRectanglesAlgorithm(time_limit=self.time_limit, lookahead_depth=2),
-            MaximalRectanglesAlgorithm(time_limit=self.time_limit, lookahead_depth=1),
+            GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.SHORTER_LEFTOVER_AXIS),
+            GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.LONGER_LEFTOVER_AXIS),
+            GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.SHORTER_AXIS),
+            # MaxRects is kept for fallback but does NOT guarantee guillotine
+            # MaximalRectanglesAlgorithm(time_limit=self.time_limit, lookahead_depth=2),
         ]
 
         best_solution = None
