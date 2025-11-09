@@ -609,12 +609,12 @@
                 <h3 class="mb-10">Board Configuration:</h3>
                 <div class="config-row">
                     <div class="config-item">
-                        <label>Board Size:</label>
+                        <label>Board Size (H x W):</label>
                         <select id="boardSize">
-                            <option value="1220x2440">4 x 8 ft (1220 x 2440 mm)</option>
-                            <option value="1220x2745">4 x 9 ft (1220 x 2745 mm)</option>
-                            <option value="1525x2440">5 x 8 ft (1525 x 2440 mm)</option>
-                            <option value="1525x3050">5 x 10 ft (1525 x 3050 mm)</option>
+                            <option value="1220x2440">1220 x 2440 mm (4 x 8 ft)</option>
+                            <option value="1220x2745">1220 x 2745 mm (4 x 9 ft)</option>
+                            <option value="1525x2440">1525 x 2440 mm (5 x 8 ft)</option>
+                            <option value="1525x3050">1525 x 3050 mm (5 x 10 ft)</option>
                         </select>
                     </div>
                     <div class="config-item">
@@ -821,7 +821,8 @@
 
             // Collect board configuration
             const boardSizeStr = document.getElementById('boardSize').value;
-            const [width, height] = boardSizeStr.split('x').map(Number);
+            // Parse as height x width (e.g., "1220x2440" means height=1220, width=2440)
+            const [height, width] = boardSizeStr.split('x').map(Number);
             const kerf = parseFloat(document.getElementById('sawKerf').value);
             const threshold = parseFloat(document.getElementById('efficiency').value);
 
@@ -831,17 +832,28 @@
                 // TODO: Collect leftover data
             }
 
+            // Create bins for each unique material+thickness combination
+            const binMap = new Map();
+            products.forEach(product => {
+                const key = `${product.material}-${product.thickness}`;
+                if (!binMap.has(key)) {
+                    binMap.set(key, {
+                        id: `Board-${product.material}-${product.thickness}mm`,
+                        width: width,
+                        height: height,
+                        thickness: product.thickness,
+                        material: product.material,
+                        available: -1  // Unlimited
+                    });
+                }
+            });
+
+            const bins = Array.from(binMap.values());
+
             // Prepare request
             const requestData = {
                 items: products,
-                bins: [{
-                    id: `Board-${width}x${height}`,
-                    width: width,
-                    height: height,
-                    thickness: 18, // Default, will be matched per product
-                    material: "Wood",
-                    available: -1
-                }],
+                bins: bins,
                 parameters: {
                     kerf: kerf,
                     utilizationThreshold: threshold,
