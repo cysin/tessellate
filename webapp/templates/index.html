@@ -298,11 +298,13 @@
         /* Board Card */
         .board-card {
             background: white;
-            border: 2px solid #ddd;
-            border-radius: 10px;
+            border-top: 2px dashed #999;
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .board-card:first-of-type {
+            border-top: none;
         }
 
         .board-header {
@@ -506,7 +508,7 @@
             /* A4 page setup */
             @page {
                 size: A4 portrait;
-                margin: 10mm 12mm;
+                margin: 8mm 10mm;
             }
 
             /* Hide web-only elements */
@@ -544,19 +546,19 @@
 
             /* Results summary page */
             .results-header {
-                padding: 5px 0;
-                margin-bottom: 10px;
+                padding: 3px 0;
+                margin-bottom: 8px;
             }
 
             .results-header p {
                 font-size: 9pt;
-                margin-bottom: 8px;
+                margin-bottom: 5px;
             }
 
             .results-stats {
                 display: flex;
                 gap: 15px;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
             }
 
             .stat-item {
@@ -579,12 +581,12 @@
 
             .board-summary-table h3 {
                 font-size: 12pt;
-                margin-bottom: 8px;
+                margin-bottom: 5px;
             }
 
             .board-summary-table table {
                 font-size: 9pt;
-                margin: 10px 0;
+                margin: 8px 0;
             }
 
             .board-summary-table th,
@@ -598,14 +600,21 @@
                 page-break-inside: avoid;
                 margin: 0;
                 padding: 0;
+                padding-top: 8px;
                 border: none;
+                border-top: 2px dashed #666;
                 box-shadow: none;
+            }
+
+            .board-card:first-of-type {
+                border-top: none;
+                padding-top: 0;
             }
 
             /* Compact board header */
             .board-header {
-                padding: 5px 0;
-                margin-bottom: 8px;
+                padding: 3px 0;
+                margin-bottom: 5px;
                 border-bottom: 2px solid #333;
             }
 
@@ -620,20 +629,20 @@
 
             /* SVG size constraints */
             .cutting-diagram {
-                margin: 8px 0;
-                max-height: 125mm;
+                margin: 5px 0;
+                max-height: 130mm;
                 background: white;
             }
 
             .cutting-diagram svg {
-                max-height: 125mm !important;
+                max-height: 130mm !important;
                 height: auto !important;
                 width: 100% !important;
             }
 
             /* Parts list - double column layout */
             .parts-list {
-                margin-top: 8px;
+                margin-top: 5px;
             }
 
             .parts-list h4 {
