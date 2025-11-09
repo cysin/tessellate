@@ -364,17 +364,22 @@ class Problem:
         """
         Get bins compatible with an item.
 
-        Material, thickness, and grain are just labels for organizing output, not constraints.
-        Only physical dimensions (width, height) matter for placement feasibility.
+        A bin is compatible if:
+        1. Material matches the item's material (boards can only have one material)
+        2. Thickness matches the item's thickness
+        3. Physical dimensions are large enough (width, height)
 
         Args:
             item: Item to check
 
         Returns:
-            List of compatible bins (those large enough to fit the item)
+            List of compatible bins (matching material/thickness and large enough)
         """
         return [
             bin_type
             for bin_type in self.bins
-            if bin_type.width >= item.width and bin_type.height >= item.height
+            if (bin_type.material == item.material and
+                bin_type.thickness == item.thickness and
+                bin_type.width >= item.width and
+                bin_type.height >= item.height)
         ]

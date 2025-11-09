@@ -928,13 +928,10 @@
         function createBoardCard(bin, boardNum, totalBoards) {
             const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
 
-            // Determine actual material and thickness from items on this board
-            const materials = new Set(bin.items.map(item => item.material));
-            const thicknesses = new Set(bin.items.map(item => item.thickness));
-
-            // Use the material/thickness of items on the board
-            const boardMaterial = materials.size === 1 ? Array.from(materials)[0] : `Mixed (${Array.from(materials).join(', ')})`;
-            const boardThickness = thicknesses.size === 1 ? Math.round(Array.from(thicknesses)[0]) : `${Math.round(bin.thickness)}`;
+            // Board material and thickness come from the bin itself
+            // A board can only have ONE material type - never mixed
+            const boardMaterial = bin.material;
+            const boardThickness = Math.round(bin.thickness);
 
             let html = `
                 <div class="board-card">
