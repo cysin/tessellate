@@ -1319,22 +1319,34 @@
 
             html += `</svg></div>`;
 
-            // Parts list - aggregate by itemId only (not by position)
-            // Count how many times each part appears on one board
+            // Parts list - count how many times each item appears on ONE representative board
+            // For identical boards (which backend groups together), each item appears on all boards
             const partsCounts = new Map();
+            const positionsSeen = new Set();  // Track positions to avoid double-counting
+
             bin.items.forEach(item => {
-                const key = item.itemId;  // Group by itemId only
-                if (!partsCounts.has(key)) {
-                    partsCounts.set(key, {
+                // Create unique key for this position
+                const posKey = `${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`;
+                const itemKey = item.itemId;
+
+                // Check if we've already counted this item at this specific position
+                const combinedKey = `${itemKey}-${posKey}`;
+                if (positionsSeen.has(combinedKey)) {
+                    return;  // Skip duplicate - already counted
+                }
+                positionsSeen.add(combinedKey);
+
+                if (!partsCounts.has(itemKey)) {
+                    partsCounts.set(itemKey, {
                         itemId: item.itemId,
                         width: item.width,
                         height: item.height,
                         rotated: item.rotated,
-                        countOnBoard: 1  // Number of this part on one board
+                        countOnBoard: 1  // Number of this part on one representative board
                     });
                 } else {
-                    // This is another instance of the same part on the same board
-                    partsCounts.get(key).countOnBoard += 1;
+                    // This is the same item at a DIFFERENT position on the same board
+                    partsCounts.get(itemKey).countOnBoard += 1;
                 }
             });
 
@@ -1373,7 +1385,8 @@
                     dimText = `${part.width.toFixed(0)} x ${part.height.toFixed(0)} mm${part.rotated ? ' (rotated)' : ''}`;
                 }
 
-                // Calculate quantity: countOnBoard × boardCount = total
+                // Calculate quantity: countOnBoard × totalBoards = total
+                // For identical boards, each item appears on ALL boards in the group
                 const total = part.countOnBoard * quantity;
                 const qtyText = `${part.countOnBoard} × ${quantity} = ${total}`;
 
