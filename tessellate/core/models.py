@@ -266,6 +266,75 @@ class Solution:
             for bins in groups_map.values()
         ]
 
+    def _format_bin_group(self, group: Dict) -> dict:
+        """
+        Format a bin group for JSON output.
+
+        Collects all item IDs across all boards in the group to show
+        complete parts list even when different parts have same dimensions.
+
+        Args:
+            group: Dictionary with "bins" and "quantity" keys
+
+        Returns:
+            Formatted bin group dictionary
+        """
+        from collections import defaultdict
+
+        representative_bin = group["bins"][0]
+
+        # Collect all items across all boards in this group
+        # Key: (x, y, width, height, rotated, material, thickness)
+        # Value: list of item IDs at this position across all boards
+        items_by_position = defaultdict(list)
+
+        for bp in group["bins"]:
+            for pi in bp.items:
+                key = (pi.x, pi.y, pi.width, pi.height, pi.rotated, pi.item.material, pi.item.thickness)
+                items_by_position[key].append(pi.item.id)
+
+        # Format items: one entry per unique position with all item IDs
+        items_list = []
+        for (x, y, width, height, rotated, material, thickness), item_ids in items_by_position.items():
+            # Get all unique item IDs at this position
+            unique_ids = list(set(item_ids))
+
+            # Create one entry for each unique ID at this position
+            for item_id in unique_ids:
+                count = item_ids.count(item_id)
+                items_list.append({
+                    "itemId": item_id,
+                    "x": x,
+                    "y": y,
+                    "width": width,
+                    "height": height,
+                    "rotated": rotated,
+                    "material": material,
+                    "thickness": thickness,
+                    "count": count  # How many boards have this item at this position
+                })
+
+        return {
+            "binId": representative_bin.bin_id,
+            "binType": representative_bin.bin_type.id,
+            "width": representative_bin.bin_type.width,
+            "height": representative_bin.bin_type.height,
+            "thickness": representative_bin.bin_type.thickness,
+            "material": representative_bin.bin_type.material,
+            "utilization": sum(bp.utilization() for bp in group["bins"]) / len(group["bins"]),
+            "quantity": group["quantity"],
+            "items": items_list,
+            "cuts": [
+                {
+                    "type": cut.cut_type.value,
+                    "position": cut.position,
+                    "start": {"x": cut.start[0], "y": cut.start[1]},
+                    "end": {"x": cut.end[0], "y": cut.end[1]},
+                }
+                for cut in representative_bin.cuts
+            ],
+        }
+
     def to_dict(self) -> dict:
         """Convert solution to dictionary format (JSON-serializable)."""
         # Group identical bins
@@ -281,38 +350,7 @@ class Solution:
                 "isComplete": self.is_complete(),
             },
             "bins": [
-                {
-                    "binId": group["bins"][0].bin_id,
-                    "binType": group["bins"][0].bin_type.id,
-                    "width": group["bins"][0].bin_type.width,
-                    "height": group["bins"][0].bin_type.height,
-                    "thickness": group["bins"][0].bin_type.thickness,
-                    "material": group["bins"][0].bin_type.material,
-                    "utilization": sum(bp.utilization() for bp in group["bins"]) / len(group["bins"]),
-                    "quantity": group["quantity"],  # Number of identical boards
-                    "items": [
-                        {
-                            "itemId": pi.item.id,
-                            "x": pi.x,
-                            "y": pi.y,
-                            "width": pi.width,
-                            "height": pi.height,
-                            "rotated": pi.rotated,
-                            "material": pi.item.material,
-                            "thickness": pi.item.thickness,
-                        }
-                        for pi in group["bins"][0].items
-                    ],
-                    "cuts": [
-                        {
-                            "type": cut.cut_type.value,
-                            "position": cut.position,
-                            "start": {"x": cut.start[0], "y": cut.start[1]},
-                            "end": {"x": cut.end[0], "y": cut.end[1]},
-                        }
-                        for cut in group["bins"][0].cuts
-                    ],
-                }
+                self._format_bin_group(group)
                 for group in bin_groups
             ],
             "unplaced": [

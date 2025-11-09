@@ -1038,11 +1038,13 @@
             html += `</svg></div>`;
 
             // Parts list - aggregate across all identical boards
-            // Backend provides reference board items, multiply by quantity
+            // Backend now provides all unique items with count field
             const partsCounts = new Map();
             bin.items.forEach(item => {
                 const key = `${item.itemId}-${item.width}-${item.height}-${item.rotated}`;
                 if (!partsCounts.has(key)) {
+                    // Use count from backend if available, otherwise multiply by quantity
+                    const itemCount = item.count !== undefined ? item.count : quantity;
                     partsCounts.set(key, {
                         itemId: item.itemId,
                         width: item.width,
@@ -1050,10 +1052,12 @@
                         material: item.material,
                         thickness: item.thickness,
                         rotated: item.rotated,
-                        count: quantity  // Multiply by number of identical boards
+                        count: itemCount
                     });
                 } else {
-                    partsCounts.get(key).count += quantity;
+                    // Add to count (handles multiple positions of same item)
+                    const itemCount = item.count !== undefined ? item.count : quantity;
+                    partsCounts.get(key).count += itemCount;
                 }
             });
 
