@@ -623,12 +623,12 @@
             /* SVG size constraints - adjusted for landscape orientation */
             .cutting-diagram {
                 margin: 5px 0;
-                max-height: 120mm;
+                max-height: 150mm;
                 background: white;
             }
 
             .cutting-diagram svg {
-                max-height: 120mm !important;
+                max-height: 150mm !important;
                 height: auto !important;
                 width: 100% !important;
             }
@@ -1546,10 +1546,6 @@
 
             let html = `
                 <div class="board-card">
-                    <div class="board-header">
-                        <div class="board-title">${boardTitle}</div>
-                        <div class="board-util">Average Utilization: ${(avgUtilization * 100).toFixed(1)}%</div>
-                    </div>
             `;
 
             // Create SVG diagram - use ORIGINAL board dimensions for display
@@ -1715,7 +1711,10 @@
 
             html += `
                 <div class="parts-list">
-                    <h4>Parts across all ${quantity} board(s):</h4>
+                    <div class="board-header">
+                        <div class="board-title">${boardTitle}</div>
+                        <div class="board-util">Average Utilization: ${(avgUtilization * 100).toFixed(1)}%</div>
+                    </div>
                     <div class="parts-table-container">
                         <!-- Left table -->
                         <div class="parts-table-left">
