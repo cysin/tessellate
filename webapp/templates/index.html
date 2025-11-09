@@ -1730,16 +1730,28 @@
                     }
                 });
 
-                if (allCodes.length > 1) {
+                // Aggregate codes by unique code (sum quantities for same code)
+                // This handles cases where input has multiple rows with same code
+                const aggregatedCodes = new Map();
+                allCodes.forEach(codeInfo => {
+                    if (aggregatedCodes.has(codeInfo.code)) {
+                        aggregatedCodes.get(codeInfo.code).qty += codeInfo.qty;
+                    } else {
+                        aggregatedCodes.set(codeInfo.code, { ...codeInfo });
+                    }
+                });
+                const uniqueCodes = Array.from(aggregatedCodes.values());
+
+                if (uniqueCodes.length > 1) {
                     // This is a merged item - split it proportionally
                     const totalOnBoard = part.countOnBoard;
-                    const totalQty = allCodes.reduce((sum, c) => sum + c.qty, 0);
+                    const totalQty = uniqueCodes.reduce((sum, c) => sum + c.qty, 0);
 
                     let distributed = 0;
-                    allCodes.forEach((codeInfo, idx) => {
+                    uniqueCodes.forEach((codeInfo, idx) => {
                         const proportion = codeInfo.qty / totalQty;
                         // Last code gets remainder to ensure total matches
-                        const qtyOnBoard = (idx === allCodes.length - 1)
+                        const qtyOnBoard = (idx === uniqueCodes.length - 1)
                             ? totalOnBoard - distributed
                             : Math.round(proportion * totalOnBoard);
 
@@ -1757,9 +1769,9 @@
                         });
                         distributed += qtyOnBoard;
                     });
-                } else if (allCodes.length === 1) {
+                } else if (uniqueCodes.length === 1) {
                     // Not merged (only one code) - display as-is
-                    const codeInfo = allCodes[0];
+                    const codeInfo = uniqueCodes[0];
                     displayParts.push({
                         itemId: codeInfo.code,
                         name: codeInfo.name,
