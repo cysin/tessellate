@@ -1712,12 +1712,31 @@
                 }
             });
 
-            // NEW: Split merged items back to individual codes with proportional distribution
-            const displayParts = [];
+            // NEW: Aggregate by merged item ID first, then split proportionally
+            // This prevents rounding errors when splitting per-position
             const itemMetadata = window.itemMetadata || {};
 
+            // First, aggregate partsCounts by the unique merged IDs to get total count
+            const mergedItemTotals = new Map();
             partsCounts.forEach((part) => {
                 const mergedId = part.itemId;
+                if (mergedItemTotals.has(mergedId)) {
+                    mergedItemTotals.get(mergedId).countOnBoard += part.countOnBoard;
+                } else {
+                    mergedItemTotals.set(mergedId, {
+                        mergedId: mergedId,
+                        width: part.width,
+                        height: part.height,
+                        rotated: part.rotated,
+                        countOnBoard: part.countOnBoard
+                    });
+                }
+            });
+
+            // Now split each aggregated merged item into individual codes
+            const displayParts = [];
+            mergedItemTotals.forEach((item) => {
+                const mergedId = item.mergedId;
 
                 // Split the mergedId if it's a combination (e.g., "merged_1/merged_2")
                 const individualIds = mergedId.split('/');
@@ -1731,7 +1750,6 @@
                 });
 
                 // Aggregate codes by unique code (sum quantities for same code)
-                // This handles cases where input has multiple rows with same code
                 const aggregatedCodes = new Map();
                 allCodes.forEach(codeInfo => {
                     if (aggregatedCodes.has(codeInfo.code)) {
@@ -1744,7 +1762,7 @@
 
                 if (uniqueCodes.length > 1) {
                     // This is a merged item - split it proportionally
-                    const totalOnBoard = part.countOnBoard;
+                    const totalOnBoard = item.countOnBoard;
                     const totalQty = uniqueCodes.reduce((sum, c) => sum + c.qty, 0);
 
                     let distributed = 0;
@@ -1755,18 +1773,20 @@
                             ? totalOnBoard - distributed
                             : Math.round(proportion * totalOnBoard);
 
-                        // Always show all codes, even if qtyOnBoard is 0 due to proportional distribution
-                        displayParts.push({
-                            itemId: codeInfo.code,
-                            name: codeInfo.name,
-                            code: codeInfo.code,
-                            width: part.width,
-                            height: part.height,
-                            rotated: part.rotated,
-                            countOnBoard: qtyOnBoard,
-                            originalMergedId: mergedId,
-                            isSplit: true
-                        });
+                        // Only show codes with non-zero count
+                        if (qtyOnBoard > 0) {
+                            displayParts.push({
+                                itemId: codeInfo.code,
+                                name: codeInfo.name,
+                                code: codeInfo.code,
+                                width: item.width,
+                                height: item.height,
+                                rotated: item.rotated,
+                                countOnBoard: qtyOnBoard,
+                                originalMergedId: mergedId,
+                                isSplit: true
+                            });
+                        }
                         distributed += qtyOnBoard;
                     });
                 } else if (uniqueCodes.length === 1) {
@@ -1776,34 +1796,27 @@
                         itemId: codeInfo.code,
                         name: codeInfo.name,
                         code: codeInfo.code,
-                        width: part.width,
-                        height: part.height,
-                        rotated: part.rotated,
-                        countOnBoard: part.countOnBoard,
+                        width: item.width,
+                        height: item.height,
+                        rotated: item.rotated,
+                        countOnBoard: item.countOnBoard,
                         isSplit: false
                     });
                 } else {
                     // Fallback: no metadata (shouldn't happen with new system)
-                    displayParts.push(part);
+                    displayParts.push({
+                        itemId: mergedId,
+                        width: item.width,
+                        height: item.height,
+                        rotated: item.rotated,
+                        countOnBoard: item.countOnBoard,
+                        isSplit: false
+                    });
                 }
             });
 
-            // Aggregate displayParts by unique code (sum quantities for same code)
-            const aggregatedParts = new Map();
-            displayParts.forEach(part => {
-                const key = part.code;
-                if (aggregatedParts.has(key)) {
-                    // Same code already exists, add to its count
-                    aggregatedParts.get(key).countOnBoard += part.countOnBoard;
-                } else {
-                    // New code, add it
-                    aggregatedParts.set(key, { ...part });
-                }
-            });
-
-            // Parts list - split into two columns for print optimization
-            // Use aggregated parts for rendering
-            const partsArray = Array.from(aggregatedParts.values());
+            // No need for additional aggregation since we already aggregated before splitting
+            const partsArray = displayParts;
             const midpoint = Math.ceil(partsArray.length / 2);
             const leftParts = partsArray.slice(0, midpoint);
             const rightParts = partsArray.slice(midpoint);
@@ -1892,7 +1905,7 @@
                             </table>
                         </div>
                     </div>
-                    ${displayParts.some(p => p.isSplit) ? `
+                    ${partsArray.some(p => p.isSplit) ? `
                         <p style="margin-top: 10px; font-size: 0.85em; color: #666;">
                             <span style="color: #667eea;">*</span> Parts with identical dimensions are grouped for optimal cutting efficiency and distributed proportionally.
                         </p>
