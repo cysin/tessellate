@@ -953,7 +953,14 @@
                         originalBoardWidth: width,
                         originalBoardHeight: height
                     };
-                    displayResults(solution, offsetInfo);
+
+                    // Create mapping from code to name for display
+                    const codeToNameMap = {};
+                    products.forEach(product => {
+                        codeToNameMap[product.code] = product.name;
+                    });
+
+                    displayResults(solution, offsetInfo, codeToNameMap);
                 } else {
                     resultsContent.innerHTML = `<div class="alert alert-error">Error: ${solution.error || 'Failed to generate plan'}</div>`;
                 }
@@ -1016,7 +1023,7 @@
             return Array.from(productMap.values());
         }
 
-        function displayResults(solution, offsetInfo = null) {
+        function displayResults(solution, offsetInfo = null, codeToNameMap = {}) {
             const resultsContent = document.getElementById('resultsContent');
 
             let html = '';
@@ -1045,7 +1052,7 @@
             // Backend returns already-aggregated bins with quantities
             // Display each board group
             solution.bins.forEach((bin, index) => {
-                html += createBoardGroupCard(bin, index + 1, offsetInfo);
+                html += createBoardGroupCard(bin, index + 1, offsetInfo, codeToNameMap);
             });
 
             // Display unplaced items if any
@@ -1063,7 +1070,7 @@
             resultsContent.innerHTML = html;
         }
 
-        function createBoardGroupCard(bin, groupNum, offsetInfo = null) {
+        function createBoardGroupCard(bin, groupNum, offsetInfo = null, codeToNameMap = {}) {
             // Professional color palette - muted, distinguishable colors
             const professionalColors = [
                 '#5B9BD5',  // Calm blue
@@ -1312,27 +1319,22 @@
 
             html += `</svg></div>`;
 
-            // Parts list - aggregate across all identical boards
-            // Backend now provides all unique items with count field
+            // Parts list - aggregate by itemId only (not by position)
+            // Count how many times each part appears on one board
             const partsCounts = new Map();
             bin.items.forEach(item => {
-                const key = `${item.itemId}-${item.width}-${item.height}-${item.rotated}`;
+                const key = item.itemId;  // Group by itemId only
                 if (!partsCounts.has(key)) {
-                    // Use count from backend if available, otherwise multiply by quantity
-                    const itemCount = item.count !== undefined ? item.count : quantity;
                     partsCounts.set(key, {
                         itemId: item.itemId,
                         width: item.width,
                         height: item.height,
-                        material: item.material,
-                        thickness: item.thickness,
                         rotated: item.rotated,
-                        count: itemCount
+                        countOnBoard: 1  // Number of this part on one board
                     });
                 } else {
-                    // Add to count (handles multiple positions of same item)
-                    const itemCount = item.count !== undefined ? item.count : quantity;
-                    partsCounts.get(key).count += itemCount;
+                    // This is another instance of the same part on the same board
+                    partsCounts.get(key).countOnBoard += 1;
                 }
             });
 
@@ -1344,11 +1346,10 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Name/Code</th>
+                                <th>Name</th>
+                                <th>Code</th>
                                 <th>Dimensions</th>
-                                <th>Material</th>
-                                <th>Thickness</th>
-                                <th>Total Qty</th>
+                                <th>Quantity</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1356,6 +1357,10 @@
 
             let rowNum = 1;
             partsCounts.forEach((part) => {
+                // Get name from mapping
+                const partName = codeToNameMap[part.itemId] || '';
+                const partCode = part.itemId;
+
                 // Calculate original part dimensions
                 let dimText;
                 if (offsetInfo && (offsetInfo.partWidthOffset !== 0 || offsetInfo.partHeightOffset !== 0)) {
@@ -1368,14 +1373,17 @@
                     dimText = `${part.width.toFixed(0)} x ${part.height.toFixed(0)} mm${part.rotated ? ' (rotated)' : ''}`;
                 }
 
+                // Calculate quantity: countOnBoard × boardCount = total
+                const total = part.countOnBoard * quantity;
+                const qtyText = `${part.countOnBoard} × ${quantity} = ${total}`;
+
                 html += `
                     <tr>
                         <td>${rowNum++}</td>
-                        <td>${part.itemId}</td>
+                        <td>${partName}</td>
+                        <td>${partCode}</td>
                         <td>${dimText}</td>
-                        <td>${part.material}</td>
-                        <td>${part.thickness} mm</td>
-                        <td>${part.count} pc${part.count > 1 ? 's' : ''}</td>
+                        <td>${qtyText}</td>
                     </tr>
                 `;
             });
