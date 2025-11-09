@@ -1022,17 +1022,42 @@
                      fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
 
             // Draw items
-            bin.items.forEach((item, idx) => {
-                const color = colors[idx % colors.length];
-                const x = 20 + item.x * scale;
-                const y = 20 + item.y * scale;
-                const w = item.width * scale;
-                const h = item.height * scale;
+            // Group items by position to handle aggregated boards with different item IDs at same position
+            const itemsByPosition = new Map();
+            bin.items.forEach(item => {
+                const posKey = `${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`;
+                if (!itemsByPosition.has(posKey)) {
+                    itemsByPosition.set(posKey, {
+                        x: item.x,
+                        y: item.y,
+                        width: item.width,
+                        height: item.height,
+                        rotated: item.rotated,
+                        itemIds: []
+                    });
+                }
+                itemsByPosition.get(posKey).itemIds.push(item.itemId);
+            });
+
+            // Draw one rectangle per unique position
+            let colorIdx = 0;
+            itemsByPosition.forEach((posData) => {
+                const color = colors[colorIdx % colors.length];
+                const x = 20 + posData.x * scale;
+                const y = 20 + posData.y * scale;
+                const w = posData.width * scale;
+                const h = posData.height * scale;
+
+                // Get unique item IDs at this position
+                const uniqueIds = [...new Set(posData.itemIds)];
+                const label = uniqueIds.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
                 html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text">
-                         ${item.itemId}${item.rotated ? ' ↻' : ''}</text>`;
+                         ${label}</text>`;
+
+                colorIdx++;
             });
 
             html += `</svg></div>`;
@@ -1162,17 +1187,42 @@
                      fill="#f8f9fa" stroke="#333" stroke-width="2"/>`;
 
             // Draw items
-            bin.items.forEach((item, idx) => {
-                const color = colors[idx % colors.length];
-                const x = 20 + item.x * scale;
-                const y = 20 + item.y * scale;
-                const w = item.width * scale;
-                const h = item.height * scale;
+            // Group items by position to handle multiple items with same dimensions at same position
+            const itemsByPosition2 = new Map();
+            bin.items.forEach(item => {
+                const posKey = `${item.x}-${item.y}-${item.width}-${item.height}-${item.rotated}`;
+                if (!itemsByPosition2.has(posKey)) {
+                    itemsByPosition2.set(posKey, {
+                        x: item.x,
+                        y: item.y,
+                        width: item.width,
+                        height: item.height,
+                        rotated: item.rotated,
+                        itemIds: []
+                    });
+                }
+                itemsByPosition2.get(posKey).itemIds.push(item.itemId);
+            });
+
+            // Draw one rectangle per unique position
+            let colorIdx2 = 0;
+            itemsByPosition2.forEach((posData) => {
+                const color = colors[colorIdx2 % colors.length];
+                const x = 20 + posData.x * scale;
+                const y = 20 + posData.y * scale;
+                const w = posData.width * scale;
+                const h = posData.height * scale;
+
+                // Get unique item IDs at this position
+                const uniqueIds = [...new Set(posData.itemIds)];
+                const label = uniqueIds.join('/') + (posData.rotated ? ' ↻' : '');
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
                 html += `<text x="${x + w/2}" y="${y + h/2}" class="item-text">
-                         ${item.itemId}${item.rotated ? ' ↻' : ''}</text>`;
+                         ${label}</text>`;
+
+                colorIdx2++;
             });
 
             html += `</svg></div>`;
