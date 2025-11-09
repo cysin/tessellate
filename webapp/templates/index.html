@@ -990,7 +990,7 @@
                 const adjWidth = Math.round(bin.width);
 
                 if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
-                    boardTitle = `BOARD ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial} (Adjusted: ${adjHeight} x ${adjWidth})`;
+                    boardTitle = `BOARD ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial} (Actual: ${adjHeight} x ${adjWidth})`;
                 } else {
                     boardTitle = `BOARD ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness} (H x W x T) ${boardMaterial}`;
                 }
@@ -1060,7 +1060,7 @@
                     const origHeight = Math.round(item.height - offsetInfo.partHeightOffset);
                     const adjWidth = Math.round(item.width);
                     const adjHeight = Math.round(item.height);
-                    dimText = `${origWidth} x ${origHeight} mm (Adjusted: ${adjWidth} x ${adjHeight})${item.rotated ? ' (rotated)' : ''}`;
+                    dimText = `${origWidth} x ${origHeight} mm (Actual: ${adjWidth} x ${adjHeight})${item.rotated ? ' (rotated)' : ''}`;
                 } else {
                     dimText = `${item.width.toFixed(0)} x ${item.height.toFixed(0)} mm${item.rotated ? ' (rotated)' : ''}`;
                 }
