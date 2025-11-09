@@ -622,14 +622,11 @@
         };
 
 
-        let rowCounter = 0;
-
         function addProductRow() {
-            rowCounter++;
             const tbody = document.getElementById('productTableBody');
             const row = tbody.insertRow();
             row.innerHTML = `
-                <td>${rowCounter}</td>
+                <td></td>
                 <td><input type="text" placeholder="Name"></td>
                 <td><input type="text" placeholder="Code"></td>
                 <td><input type="number" placeholder="Width" min="0"></td>
@@ -645,6 +642,7 @@
                 </td>
                 <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
             `;
+            renumberRows();
         }
 
         function deleteRow(btn) {
@@ -738,10 +736,9 @@
             // Don't clear existing rows - append to them
 
             products.forEach(product => {
-                rowCounter++;
                 const row = tbody.insertRow();
                 row.innerHTML = `
-                    <td>${rowCounter}</td>
+                    <td></td>
                     <td><input type="text" value="${product.name}"></td>
                     <td><input type="text" value="${product.code}"></td>
                     <td><input type="number" value="${product.width}"></td>
@@ -758,6 +755,7 @@
                     <td><button class="delete-btn" onclick="deleteRow(this)">X</button></td>
                 `;
             });
+            renumberRows();
         }
 
         async function downloadTemplate() {
