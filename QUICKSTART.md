@@ -12,9 +12,41 @@ python tests/test_realistic.py
 
 ## Running the Web Application
 
+### Option 1: Using Startup Scripts (Easiest)
+
+**Linux/Mac:**
 ```bash
-# Start the web server
 cd webapp
+./start.sh
+```
+
+**Windows:**
+```batch
+cd webapp
+start.bat
+```
+
+The scripts automatically:
+- Create virtual environment
+- Install dependencies
+- Start the server
+
+### Option 2: Manual Setup
+
+```bash
+# Navigate to webapp directory
+cd webapp
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# OR
+venv\Scripts\activate  # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the server
 python app.py
 
 # Open your browser

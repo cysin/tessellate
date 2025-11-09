@@ -1,0 +1,6 @@
+# Web Application Dependencies
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# The tessellate library will be imported from parent directory
+# No need to install separately when running locally
