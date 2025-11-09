@@ -175,7 +175,7 @@ def test_excel_upload():
                 product = data['products'][0]
                 print(f"    Name: {product['name']}")
                 print(f"    Code: {product['code']}")
-                print(f"    Dimensions: {product['length']} x {product['width']} x {product['thickness']}")
+                print(f"    Dimensions: {product['width']} x {product['height']} x {product['thickness']}")
                 print(f"    Grain: {product['grain']}")
                 print(f"    Qty: {product['qty']}")
 
