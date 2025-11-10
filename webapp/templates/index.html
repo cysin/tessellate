@@ -267,43 +267,40 @@
         }
 
         .results-header {
-            background: white;
-            padding: 3px 0;
-            margin-bottom: 8px;
-        }
-
-        .results-header p {
-            font-size: 9pt;
-            margin-bottom: 5px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         .results-stats {
             display: flex;
-            gap: 15px;
-            margin-bottom: 8px;
+            gap: 30px;
+            flex-wrap: wrap;
         }
 
         .stat-item {
-            min-width: auto;
+            flex: 1;
+            min-width: 150px;
         }
 
         .stat-value {
-            font-size: 14pt;
+            font-size: 1.8em;
             font-weight: bold;
-            color: #333;
+            color: #667eea;
         }
 
         .stat-label {
-            color: #333;
-            font-size: 8pt;
+            color: #666;
+            font-size: 0.9em;
         }
 
         /* Board Card */
         .board-card {
             background: white;
-            border-top: 2px solid #ddd;
-            padding: 10px 0;
-            margin-bottom: 20px;
+            border-top: 2px dashed #999;
+            padding: 25px;
+            margin-bottom: 30px;
         }
 
         .board-card:first-of-type {
@@ -314,102 +311,64 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 3px 0;
-            margin-bottom: 5px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
         }
 
         .board-title {
-            font-size: 11pt;
-            font-weight: bold;
-            color: #000;
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
         }
 
         .board-util {
-            font-size: 9pt;
-            color: #000;
-            font-weight: normal;
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: 600;
         }
 
         /* SVG Diagram */
         .cutting-diagram {
-            margin: 5px 0;
-            background: white;
+            margin: 20px 0;
+            background: #fafafa;
         }
 
         /* Parts List */
         .parts-list {
-            margin-top: 5px;
+            margin: 20px 0;
         }
 
         /* Parts table double column layout */
         .parts-table-container {
             display: flex;
-            gap: 10px;
+            gap: 20px;
             justify-content: space-between;
         }
 
         .parts-table-left,
         .parts-table-right {
-            width: 48%;
-            flex-shrink: 0;
+            flex: 1;
+            min-width: 0;
         }
 
         .parts-list h4 {
-            font-size: 10pt;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #000;
+            margin-bottom: 10px;
+            color: #667eea;
         }
 
         .parts-list table {
             min-width: auto;
-            font-size: 7pt;
-            border-collapse: collapse;
         }
 
         .parts-list th {
-            background: #f0f0f0;
-            color: #000;
-            font-size: 8pt;
-            padding: 3px !important;
-            border: 1px solid #333;
-            font-weight: bold;
+            background: #f8f9fa;
+            color: #333;
+            font-size: 0.85em;
         }
 
         .parts-list td {
-            font-size: 7pt;
-            padding: 2px 3px !important;
-            border: 1px solid #333;
-        }
-
-        /* Board Summary Table */
-        .board-summary-table {
-            margin-bottom: 20px;
-        }
-
-        .board-summary-table h3 {
-            font-size: 12pt;
-            margin-bottom: 5px;
-            color: #000;
-        }
-
-        .board-summary-table table {
-            font-size: 9pt;
-            margin: 8px 0;
-            border-collapse: collapse;
-        }
-
-        .board-summary-table th,
-        .board-summary-table td {
-            padding: 5px !important;
-            border: 1px solid #333;
-        }
-
-        .board-summary-table th {
-            background: #f0f0f0;
-            color: #000;
-            font-weight: bold;
+            font-size: 0.9em;
         }
 
         /* Leftover Info */
