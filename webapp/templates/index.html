@@ -267,40 +267,43 @@
         }
 
         .results-header {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            background: white;
+            padding: 3px 0;
+            margin-bottom: 8px;
+        }
+
+        .results-header p {
+            font-size: 9pt;
+            margin-bottom: 5px;
         }
 
         .results-stats {
             display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 8px;
         }
 
         .stat-item {
-            flex: 1;
-            min-width: 150px;
+            min-width: auto;
         }
 
         .stat-value {
-            font-size: 1.8em;
+            font-size: 14pt;
             font-weight: bold;
-            color: #667eea;
+            color: #333;
         }
 
         .stat-label {
-            color: #666;
-            font-size: 0.9em;
+            color: #333;
+            font-size: 8pt;
         }
 
         /* Board Card */
         .board-card {
             background: white;
-            border-top: 2px dashed #999;
-            padding: 25px;
-            margin-bottom: 30px;
+            border-top: 2px solid #ddd;
+            padding: 10px 0;
+            margin-bottom: 20px;
         }
 
         .board-card:first-of-type {
@@ -311,64 +314,102 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
+            padding: 3px 0;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #333;
         }
 
         .board-title {
-            font-size: 1.3em;
-            font-weight: 600;
-            color: #333;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000;
         }
 
         .board-util {
-            font-size: 1.1em;
-            color: #667eea;
-            font-weight: 600;
+            font-size: 9pt;
+            color: #000;
+            font-weight: normal;
         }
 
         /* SVG Diagram */
         .cutting-diagram {
-            margin: 20px 0;
-            background: #fafafa;
+            margin: 5px 0;
+            background: white;
         }
 
         /* Parts List */
         .parts-list {
-            margin: 20px 0;
+            margin-top: 5px;
         }
 
         /* Parts table double column layout */
         .parts-table-container {
             display: flex;
-            gap: 20px;
+            gap: 10px;
             justify-content: space-between;
         }
 
         .parts-table-left,
         .parts-table-right {
-            flex: 1;
-            min-width: 0;
+            width: 48%;
+            flex-shrink: 0;
         }
 
         .parts-list h4 {
-            margin-bottom: 10px;
-            color: #667eea;
+            font-size: 10pt;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #000;
         }
 
         .parts-list table {
             min-width: auto;
+            font-size: 7pt;
+            border-collapse: collapse;
         }
 
         .parts-list th {
-            background: #f8f9fa;
-            color: #333;
-            font-size: 0.85em;
+            background: #f0f0f0;
+            color: #000;
+            font-size: 8pt;
+            padding: 3px !important;
+            border: 1px solid #333;
+            font-weight: bold;
         }
 
         .parts-list td {
-            font-size: 0.9em;
+            font-size: 7pt;
+            padding: 2px 3px !important;
+            border: 1px solid #333;
+        }
+
+        /* Board Summary Table */
+        .board-summary-table {
+            margin-bottom: 20px;
+        }
+
+        .board-summary-table h3 {
+            font-size: 12pt;
+            margin-bottom: 5px;
+            color: #000;
+        }
+
+        .board-summary-table table {
+            font-size: 9pt;
+            margin: 8px 0;
+            border-collapse: collapse;
+        }
+
+        .board-summary-table th,
+        .board-summary-table td {
+            padding: 5px !important;
+            border: 1px solid #333;
+        }
+
+        .board-summary-table th {
+            background: #f0f0f0;
+            color: #000;
+            font-weight: bold;
         }
 
         /* Leftover Info */
