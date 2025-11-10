@@ -220,15 +220,15 @@ def upload_excel():
     """
     Upload and parse an Excel file with product data.
 
-    Expected Excel columns:
-    - Name: Product name
-    - Code: Product code
-    - Width: Width in mm (horizontal dimension)
-    - Height: Height in mm (vertical dimension)
-    - Thickness: Thickness in mm
-    - Color: Material color/type
-    - Qty: Quantity
-    - Grain: Grain orientation (mixed/fixed)
+    Expected Excel columns (English or Chinese):
+    - Name/名称: Product name
+    - Code/编码: Product code
+    - Width/宽度: Width in mm (horizontal dimension)
+    - Height/高度: Height in mm (vertical dimension)
+    - Thickness/厚度: Thickness in mm
+    - Color/颜色: Material color/type
+    - Qty/数量: Quantity
+    - Grain/纹理: Grain orientation (mixed/fixed or 可旋转/不可旋转)
 
     Returns JSON array of products.
     """
@@ -248,23 +248,55 @@ def upload_excel():
         wb = load_workbook(file, data_only=True)
         ws = wb.active
 
+        # Define column name mappings (Chinese -> English)
+        column_mapping = {
+            'Name': 'Name',
+            '名称': 'Name',
+            'Code': 'Code',
+            '编码': 'Code',
+            'Width': 'Width',
+            '宽度': 'Width',
+            'Height': 'Height',
+            '高度': 'Height',
+            'Thickness': 'Thickness',
+            '厚度': 'Thickness',
+            'Color': 'Color',
+            '颜色': 'Color',
+            'Qty': 'Qty',
+            '数量': 'Qty',
+            'Grain': 'Grain',
+            '纹理': 'Grain'
+        }
+
+        # Define grain value mappings (Chinese -> English)
+        grain_mapping = {
+            'mixed': 'mixed',
+            'fixed': 'fixed',
+            '可旋转': 'mixed',
+            '不可旋转': 'fixed'
+        }
+
         # Find header row (should be first row)
         headers = []
         for cell in ws[1]:
             headers.append(cell.value.strip() if cell.value else "")
 
+        # Normalize headers to English using mapping
+        normalized_headers = {}
+        for idx, header in enumerate(headers):
+            if header in column_mapping:
+                english_name = column_mapping[header]
+                normalized_headers[english_name] = idx
+
         # Validate required columns
         required_columns = ['Name', 'Code', 'Width', 'Height', 'Thickness', 'Color', 'Qty', 'Grain']
-        missing_columns = [col for col in required_columns if col not in headers]
+        missing_columns = [col for col in required_columns if col not in normalized_headers]
 
         if missing_columns:
             return jsonify({
-                "error": f"Missing required columns: {', '.join(missing_columns)}",
+                "error": f"Missing required columns: {', '.join(missing_columns)}. Columns can be in English or Chinese (e.g., Name/名称, Code/编码, Width/宽度, Height/高度, Thickness/厚度, Color/颜色, Qty/数量, Grain/纹理)",
                 "foundColumns": headers
             }), 400
-
-        # Get column indices
-        col_indices = {col: headers.index(col) for col in required_columns}
 
         # Parse rows
         products = []
@@ -276,14 +308,14 @@ def upload_excel():
                 continue
 
             try:
-                name = row[col_indices['Name']]
-                code = row[col_indices['Code']]
-                width = row[col_indices['Width']]
-                height = row[col_indices['Height']]
-                thickness = row[col_indices['Thickness']]
-                color = row[col_indices['Color']]
-                qty = row[col_indices['Qty']]
-                grain = row[col_indices['Grain']]
+                name = row[normalized_headers['Name']]
+                code = row[normalized_headers['Code']]
+                width = row[normalized_headers['Width']]
+                height = row[normalized_headers['Height']]
+                thickness = row[normalized_headers['Thickness']]
+                color = row[normalized_headers['Color']]
+                qty = row[normalized_headers['Qty']]
+                grain = row[normalized_headers['Grain']]
 
                 # Validate required fields
                 if not all([name, code, width, height, thickness, color, qty, grain]):
@@ -300,10 +332,12 @@ def upload_excel():
                     errors.append(f"Row {row_num}: Invalid numeric value")
                     continue
 
-                # Validate grain value
-                grain = str(grain).lower().strip()
-                if grain not in ['mixed', 'fixed']:
-                    errors.append(f"Row {row_num}: Grain must be 'mixed' or 'fixed', got '{grain}'")
+                # Validate and normalize grain value (support both English and Chinese)
+                grain_str = str(grain).lower().strip()
+                if grain_str in grain_mapping:
+                    grain = grain_mapping[grain_str]
+                else:
+                    errors.append(f"Row {row_num}: Grain must be 'mixed'/'可旋转' or 'fixed'/'不可旋转', got '{grain}'")
                     continue
 
                 # Add product
@@ -360,8 +394,9 @@ def download_template():
         ws = wb.active
         ws.title = "Products"
 
-        # Define headers
-        headers = ['Name', 'Code', 'Width', 'Height', 'Thickness', 'Color', 'Qty', 'Grain']
+        # Define headers (Chinese)
+        headers = ['名称', '编码', '宽度', '高度', '厚度', '颜色', '数量', '纹理']
+        header_keys = ['Name', 'Code', 'Width', 'Height', 'Thickness', 'Color', 'Qty', 'Grain']
 
         # Style for header
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -375,43 +410,43 @@ def download_template():
             cell.font = header_font
             cell.alignment = header_alignment
 
-        # Add example data
+        # Add example data (with Chinese grain values)
         examples = [
             {
-                'Name': 'Cabinet Door',
+                'Name': '柜门',
                 'Code': 'CAB-001',
                 'Width': 800,
                 'Height': 600,
                 'Thickness': 18,
-                'Color': 'Oak',
+                'Color': '橡木',
                 'Qty': 4,
-                'Grain': 'fixed'
+                'Grain': '不可旋转'
             },
             {
-                'Name': 'Shelf Board',
+                'Name': '层板',
                 'Code': 'SHF-001',
                 'Width': 1200,
                 'Height': 400,
                 'Thickness': 18,
-                'Color': 'Oak',
+                'Color': '橡木',
                 'Qty': 3,
-                'Grain': 'mixed'
+                'Grain': '可旋转'
             },
             {
-                'Name': 'Table Top',
+                'Name': '台面',
                 'Code': 'TBL-001',
                 'Width': 1800,
                 'Height': 900,
                 'Thickness': 25,
-                'Color': 'Walnut',
+                'Color': '胡桃木',
                 'Qty': 1,
-                'Grain': 'fixed'
+                'Grain': '不可旋转'
             }
         ]
 
         for row_num, example in enumerate(examples, start=2):
-            for col_num, header in enumerate(headers, start=1):
-                ws.cell(row=row_num, column=col_num, value=example[header])
+            for col_num, header_key in enumerate(header_keys, start=1):
+                ws.cell(row=row_num, column=col_num, value=example[header_key])
 
         # Set column widths
         column_widths = {
