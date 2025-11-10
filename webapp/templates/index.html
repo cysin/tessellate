@@ -706,8 +706,8 @@
             }
         }
     </style>
-    <!-- html2pdf.js library for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2pdf.js library for PDF export (locally hosted) -->
+    <script src="/static/js/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -2261,173 +2261,11 @@
                 return;
             }
 
-            // Show loading message
-            const originalContent = resultsContent.innerHTML;
-            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成PDF...</p></div>';
-
-            // Create a container for PDF with print-style formatting
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.width = '297mm'; // A4 landscape width
-            pdfContainer.style.background = 'white';
-            pdfContainer.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
-            // Clone the results content
-            const contentClone = document.createElement('div');
-            contentClone.innerHTML = originalContent;
-
-            // Apply print-style formatting
-            // Hide elements that shouldn't be in PDF
-            const hideSelectors = ['.action-buttons', 'button', 'input', 'select', '.alert-error'];
-            hideSelectors.forEach(selector => {
-                contentClone.querySelectorAll(selector).forEach(el => el.style.display = 'none');
-            });
-
-            // Style the results header
-            const resultsHeader = contentClone.querySelector('.results-header');
-            if (resultsHeader) {
-                resultsHeader.style.padding = '3px 0';
-                resultsHeader.style.marginBottom = '8px';
-                resultsHeader.style.fontSize = '9pt';
+            // Use browser's native print-to-PDF which is more reliable
+            // Show instructions to user
+            if (confirm('将打开打印对话框，请在打印对话框中：\n\n1. 选择"另存为PDF"或"Microsoft Print to PDF"\n2. 确认纸张方向为"横向"\n3. 点击"保存"按钮\n\n点击"确定"继续')) {
+                window.print();
             }
-
-            // Style stats
-            const statsContainer = contentClone.querySelector('.results-stats');
-            if (statsContainer) {
-                statsContainer.style.display = 'flex';
-                statsContainer.style.gap = '15px';
-                statsContainer.style.marginBottom = '8px';
-            }
-
-            // Style board summary table
-            const summaryTable = contentClone.querySelector('.board-summary-table');
-            if (summaryTable) {
-                summaryTable.style.marginBottom = '20px';
-                summaryTable.style.pageBreakAfter = 'always';
-                const h3 = summaryTable.querySelector('h3');
-                if (h3) h3.style.fontSize = '12pt';
-            }
-
-            // Style each board card for proper page breaks and layout
-            const boardCards = contentClone.querySelectorAll('.board-card');
-            boardCards.forEach((card, index) => {
-                card.style.pageBreakBefore = 'always';
-                card.style.pageBreakInside = 'avoid';
-                card.style.margin = '0';
-                card.style.padding = '0';
-                card.style.border = 'none';
-                card.style.boxShadow = 'none';
-                card.style.background = 'white';
-
-                // Board header styling
-                const boardHeader = card.querySelector('.board-header');
-                if (boardHeader) {
-                    boardHeader.style.padding = '3px 0';
-                    boardHeader.style.marginBottom = '5px';
-                    boardHeader.style.borderBottom = '2px solid #333';
-
-                    const title = boardHeader.querySelector('.board-title');
-                    if (title) {
-                        title.style.fontSize = '11pt';
-                        title.style.fontWeight = 'bold';
-                    }
-
-                    const util = boardHeader.querySelector('.board-util');
-                    if (util) util.style.fontSize = '9pt';
-                }
-
-                // SVG diagram styling
-                const diagram = card.querySelector('.cutting-diagram');
-                if (diagram) {
-                    diagram.style.margin = '5px 0';
-                    diagram.style.maxHeight = '150mm';
-                    diagram.style.background = 'white';
-
-                    const svg = diagram.querySelector('svg');
-                    if (svg) {
-                        svg.style.maxHeight = '150mm';
-                        svg.style.height = 'auto';
-                        svg.style.width = '100%';
-                    }
-                }
-
-                // Parts table container - two columns
-                const tableContainer = card.querySelector('.parts-table-container');
-                if (tableContainer) {
-                    tableContainer.style.display = 'flex';
-                    tableContainer.style.gap = '10px';
-                    tableContainer.style.justifyContent = 'space-between';
-                    tableContainer.style.marginTop = '5px';
-
-                    const leftTable = tableContainer.querySelector('.parts-table-left');
-                    const rightTable = tableContainer.querySelector('.parts-table-right');
-
-                    if (leftTable) {
-                        leftTable.style.width = '48%';
-                        leftTable.style.flexShrink = '0';
-                    }
-                    if (rightTable) {
-                        rightTable.style.width = '48%';
-                        rightTable.style.flexShrink = '0';
-                    }
-
-                    // Style tables
-                    const tables = tableContainer.querySelectorAll('table');
-                    tables.forEach(table => {
-                        table.style.fontSize = '7pt';
-                        table.style.width = '100%';
-                        table.style.borderCollapse = 'collapse';
-
-                        // Style headers
-                        table.querySelectorAll('th').forEach(th => {
-                            th.style.fontSize = '8pt';
-                            th.style.padding = '3px';
-                            th.style.background = '#f0f0f0';
-                            th.style.border = '1px solid #333';
-                            th.style.fontWeight = 'bold';
-                        });
-
-                        // Style cells
-                        table.querySelectorAll('td').forEach(td => {
-                            td.style.padding = '2px 3px';
-                            td.style.fontSize = '7pt';
-                            td.style.border = '1px solid #333';
-                        });
-                    });
-                }
-            });
-
-            pdfContainer.appendChild(contentClone);
-
-            // PDF options optimized for print-like output
-            const opt = {
-                margin: [8, 10], // Same as @page margin
-                filename: `下料方案_${new Date().toLocaleDateString('zh-CN')}.pdf`,
-                image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    letterRendering: true,
-                    windowWidth: 1122, // A4 landscape width in pixels at 96dpi (297mm)
-                    windowHeight: 794  // A4 landscape height in pixels at 96dpi (210mm)
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'landscape'
-                },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.board-card', after: '.board-summary-table' }
-            };
-
-            // Generate PDF
-            html2pdf().set(opt).from(pdfContainer).save().then(() => {
-                // Restore original content
-                resultsContent.innerHTML = originalContent;
-            }).catch(err => {
-                console.error('PDF生成失败:', err);
-                alert('PDF生成失败，请重试');
-                resultsContent.innerHTML = originalContent;
-            });
         }
     </script>
 </body>
