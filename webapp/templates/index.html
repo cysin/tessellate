@@ -505,6 +505,13 @@
 
         /* Print Styles for A4 Layout */
         @media print {
+            /* Force browsers to print colors exactly as displayed */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
             /* A4 page setup - landscape for better board visualization */
             @page {
                 size: A4 landscape;
@@ -677,20 +684,23 @@
                 border: 1px solid #333 !important;
             }
 
-            /* Ensure black text for printing */
-            .board-card,
-            .board-card * {
+            /* Ensure black text for printing, but exclude SVG elements */
+            .board-card {
                 color: #000 !important;
             }
 
-            /* Keep SVG colors and patterns */
-            svg,
-            svg *,
-            svg rect[fill^="#"],
-            svg rect[fill^="url"] {
-                color: initial !important;
-                fill: initial !important;
-                stroke: initial !important;
+            /* Apply black text to non-SVG elements only */
+            .board-card p,
+            .board-card div:not(.cutting-diagram),
+            .board-card span,
+            .board-card table,
+            .board-card th,
+            .board-card td,
+            .board-card h1,
+            .board-card h2,
+            .board-card h3,
+            .board-card h4 {
+                color: #000 !important;
             }
 
             /* Ensure borders are visible */
