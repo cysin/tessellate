@@ -706,6 +706,8 @@
             }
         }
     </style>
+    <!-- html2pdf.js library for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -859,6 +861,7 @@
                 <div id="resultsContent"></div>
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="scrollToInput()">↑ 返回输入区</button>
+                    <button class="btn btn-primary" onclick="exportToPDF()">📄 导出PDF</button>
                     <button class="btn btn-primary" onclick="printResults()">🖨 打印全部</button>
                 </div>
             </div>
@@ -2240,6 +2243,54 @@
 
         function printResults() {
             window.print();
+        }
+
+        function exportToPDF() {
+            const resultsContent = document.getElementById('resultsContent');
+
+            if (!resultsContent || !resultsContent.innerHTML.trim()) {
+                alert('没有可导出的内容');
+                return;
+            }
+
+            // Create a container for the PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.width = '210mm'; // A4 width
+            pdfContainer.style.padding = '10mm';
+            pdfContainer.innerHTML = resultsContent.innerHTML;
+
+            // PDF options
+            const opt = {
+                margin: [5, 5],
+                filename: `下料方案_${new Date().toLocaleDateString('zh-CN')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    letterRendering: true
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'landscape'
+                },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            // Show loading message
+            const originalContent = resultsContent.innerHTML;
+            resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成PDF...</p></div>';
+
+            // Generate PDF
+            html2pdf().set(opt).from(pdfContainer).save().then(() => {
+                // Restore original content
+                resultsContent.innerHTML = originalContent;
+            }).catch(err => {
+                console.error('PDF生成失败:', err);
+                alert('PDF生成失败，请重试');
+                resultsContent.innerHTML = originalContent;
+            });
         }
     </script>
 </body>
