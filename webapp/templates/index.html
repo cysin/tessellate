@@ -1686,6 +1686,10 @@
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
 
+                // Add dimension label at top-left corner
+                const dimLabel = `${Math.round(w)} x ${Math.round(h)}`;
+                html += `<text x="${x + 5}" y="${y + 15}" font-size="12" fill="#000" font-weight="bold" style="pointer-events: none;">${dimLabel}</text>`;
+
                 // Use text wrapping for long labels
                 html += createWrappedText(x + w/2, y + h/2, w, h, label);
             });
@@ -2194,6 +2198,10 @@
 
                 html += `<rect x="${x}" y="${y}" width="${w}" height="${h}"
                          fill="${color}" class="item-rect"/>`;
+
+                // Add dimension label at top-left corner
+                const dimLabel = `${Math.round(w)} x ${Math.round(h)}`;
+                html += `<text x="${x + 5}" y="${y + 15}" font-size="12" fill="#000" font-weight="bold" style="pointer-events: none;">${dimLabel}</text>`;
 
                 // Use text wrapping for long labels
                 html += createWrappedText(x + w/2, y + h/2, w, h, label);
