@@ -976,6 +976,14 @@
 
                     // Clear file input
                     fileInput.value = '';
+
+                    // Auto-scroll to generate button after successful import
+                    setTimeout(() => {
+                        const generateBtn = document.querySelector('.generate-btn-container');
+                        if (generateBtn) {
+                            generateBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300); // Small delay to allow table to render
                 } else {
                     statusDiv.innerHTML = `<div class="upload-status error">错误：${data.error || '上传失败'}</div>`;
                 }
