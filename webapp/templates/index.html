@@ -1590,12 +1590,12 @@
                 const adjWidth = Math.round(bin.width);
 
                 if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
-                    boardTitle = `板材 x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}（实际：${adjHeight} x ${adjWidth}）`;
+                    boardTitle = `板材规格：${origWidth} x ${origHeight} x ${boardThickness} 花色：${boardMaterial} 数量：${quantity}（实际：${adjWidth} x ${adjHeight}）`;
                 } else {
-                    boardTitle = `板材 x${quantity} - ${origHeight} x ${origWidth} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}`;
+                    boardTitle = `板材规格：${origWidth} x ${origHeight} x ${boardThickness} 花色：${boardMaterial} 数量：${quantity}`;
                 }
             } else {
-                boardTitle = `板材 x${quantity} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}`;
+                boardTitle = `板材规格：${Math.round(bin.width)} x ${Math.round(bin.height)} x ${boardThickness} 花色：${boardMaterial} 数量：${quantity}`;
             }
 
             let html = `
@@ -2095,12 +2095,12 @@
                 const adjWidth = Math.round(bin.width);
 
                 if (offsetInfo.boardWidthOffset !== 0 || offsetInfo.boardHeightOffset !== 0) {
-                    boardTitle = `板材 ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}（实际：${adjHeight} x ${adjWidth}）`;
+                    boardTitle = `板材规格：${origWidth} x ${origHeight} x ${boardThickness} 花色：${boardMaterial} 编号：${boardNum}（实际：${adjWidth} x ${adjHeight}）`;
                 } else {
-                    boardTitle = `板材 ${boardNum} - ${origHeight} x ${origWidth} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}`;
+                    boardTitle = `板材规格：${origWidth} x ${origHeight} x ${boardThickness} 花色：${boardMaterial} 编号：${boardNum}`;
                 }
             } else {
-                boardTitle = `板材 ${boardNum} - ${Math.round(bin.height)} x ${Math.round(bin.width)} x ${boardThickness}（高 x 宽 x 厚）${boardMaterial}`;
+                boardTitle = `板材规格：${Math.round(bin.width)} x ${Math.round(bin.height)} x ${boardThickness} 花色：${boardMaterial} 编号：${boardNum}`;
             }
 
             let html = `
