@@ -449,7 +449,7 @@ class Problem:
         A bin is compatible if:
         1. Material matches the item's material (boards can only have one material)
         2. Thickness matches the item's thickness
-        3. Physical dimensions are large enough (width, height)
+        3. Physical dimensions are large enough (in either orientation)
 
         Args:
             item: Item to check
@@ -462,6 +462,7 @@ class Problem:
             for bin_type in self.bins
             if (bin_type.material == item.material and
                 bin_type.thickness == item.thickness and
-                bin_type.width >= item.width and
-                bin_type.height >= item.height)
+                # Item can fit in either orientation
+                ((bin_type.width >= item.width and bin_type.height >= item.height) or
+                 (bin_type.width >= item.height and bin_type.height >= item.width)))
         ]

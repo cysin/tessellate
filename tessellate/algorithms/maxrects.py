@@ -273,15 +273,12 @@ class MaximalRectanglesAlgorithm(PackingAlgorithm):
             kerf
         )
 
-        # Try both orientations
-        orientations = []
-
-        # Original orientation
-        orientations.append((item.width, item.height, False))
-
-        # Rotated orientation (if allowed)
-        if item.rotatable:
-            orientations.append((item.height, item.width, True))
+        # Try both orientations - even for non-rotatable items
+        # we need to try both to find valid placements in the bin
+        orientations = [
+            (item.width, item.height, False),
+            (item.height, item.width, True),
+        ]
 
         best_score = float('-inf')
         best_placement = None

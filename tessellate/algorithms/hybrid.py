@@ -9,6 +9,7 @@ from typing import List
 from tessellate.algorithms.base import PackingAlgorithm
 from tessellate.algorithms.guillotine import GuillotinePacker, SplitRule
 from tessellate.algorithms.maxrects import MaximalRectanglesAlgorithm
+from tessellate.algorithms.skyline import SkylinePacker
 from tessellate.core.models import Problem, Solution
 from tessellate.core.bounds import BoundsCalculator
 
@@ -50,13 +51,16 @@ class HybridSolver(PackingAlgorithm):
         total_lower_bound = sum(bounds.values()) if bounds else 1
 
         # Try multiple algorithms with different configurations
-        # PRIORITY: Use Guillotine algorithms which GUARANTEE guillotine constraints
+        # PRIORITY 1: Skyline algorithms - often produce better packing with rotation
+        # PRIORITY 2: Guillotine algorithms - GUARANTEE guillotine constraints
         algorithms = [
+            SkylinePacker(time_limit=self.time_limit, use_min_waste=True),
+            SkylinePacker(time_limit=self.time_limit, use_min_waste=False),
             GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.SHORTER_LEFTOVER_AXIS),
             GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.LONGER_LEFTOVER_AXIS),
             GuillotinePacker(time_limit=self.time_limit, split_rule=SplitRule.SHORTER_AXIS),
             # MaxRects is kept for fallback but does NOT guarantee guillotine
-            # MaximalRectanglesAlgorithm(time_limit=self.time_limit, lookahead_depth=2),
+            MaximalRectanglesAlgorithm(time_limit=self.time_limit, lookahead_depth=2),
         ]
 
         best_solution = None

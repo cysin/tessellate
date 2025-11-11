@@ -278,13 +278,12 @@ class GuillotinePacker(PackingAlgorithm):
 
         # Try all free rectangles
         for rect_idx, rect in enumerate(free_rects):
-            # Try both orientations
+            # Try both orientations - even for non-rotatable items
+            # we need to try both to find valid placements in the bin
             orientations = [
                 (item.width, item.height, False),
+                (item.height, item.width, True),
             ]
-
-            if item.rotatable:
-                orientations.append((item.height, item.width, True))
 
             for width, height, rotated in orientations:
                 if rect.can_fit(width, height):
