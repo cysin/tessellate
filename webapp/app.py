@@ -4,8 +4,12 @@ Flask web application for the Tessellate cutting stock optimizer.
 Provides a web interface for solving 2D guillotine cutting stock problems.
 """
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
 from flask_cors import CORS
+from flask_session import Session
+from werkzeug.security import check_password_hash
+from functools import wraps
+from datetime import timedelta
 import sys
 import os
 import json
@@ -13,6 +17,12 @@ import traceback
 from io import BytesIO
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from dotenv import load_dotenv
+from collections import defaultdict
+from time import time
+
+# Load environment variables
+load_dotenv()
 
 # Add parent directory to path to import tessellate
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -24,6 +34,23 @@ from tessellate.algorithms.guillotine_tree import GuillotineTreeBuilder
 
 app = Flask(__name__)
 CORS(app)
+
+# Session configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True if using HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.getenv('SESSION_LIFETIME', 86400)))
+
+# Initialize session
+Session(app)
+
+# Rate limiting for login attempts (in-memory)
+login_attempts = defaultdict(list)
+MAX_LOGIN_ATTEMPTS = 5
+RATE_LIMIT_WINDOW = 900  # 15 minutes in seconds
 
 
 def deduplicate_items(items):
@@ -67,13 +94,132 @@ def deduplicate_items(items):
     return list(item_map.values())
 
 
+# Authentication helper functions
+def check_rate_limit(ip_address):
+    """Check if IP has exceeded login attempt rate limit"""
+    current_time = time()
+    # Clean old attempts
+    login_attempts[ip_address] = [
+        attempt_time for attempt_time in login_attempts[ip_address]
+        if current_time - attempt_time < RATE_LIMIT_WINDOW
+    ]
+
+    # Check if exceeded limit
+    if len(login_attempts[ip_address]) >= MAX_LOGIN_ATTEMPTS:
+        return False
+
+    return True
+
+
+def record_login_attempt(ip_address):
+    """Record a login attempt"""
+    login_attempts[ip_address].append(time())
+
+
+def verify_password(password):
+    """Verify password against stored hash"""
+    password_hash = os.getenv('APP_PASSWORD_HASH')
+
+    if not password_hash:
+        # No password configured - allow access in development
+        if os.getenv('ENVIRONMENT', 'production') == 'development':
+            return True
+        return False
+
+    return check_password_hash(password_hash, password)
+
+
+def login_required(f):
+    """Decorator to require authentication for routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if password is configured
+        if not os.getenv('APP_PASSWORD_HASH'):
+            # No authentication configured - skip in development
+            if os.getenv('ENVIRONMENT', 'production') == 'development':
+                return f(*args, **kwargs)
+
+        # Check if user is logged in
+        if not session.get('authenticated'):
+            # For API routes, return 401
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "未授权 / Unauthorized", "code": "AUTH_REQUIRED"}), 401
+            # For page routes, redirect to login
+            return redirect(url_for('login_page', return_url=request.path))
+
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# Authentication routes
+@app.route('/login')
+def login_page():
+    """Serve login page"""
+    # If already authenticated, redirect to main page or return URL
+    if session.get('authenticated'):
+        return_url = request.args.get('return_url', '/')
+        return redirect(return_url)
+
+    return render_template('login.html')
+
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Authenticate user"""
+    try:
+        data = request.get_json()
+        password = data.get('password', '')
+
+        # Get client IP
+        ip_address = request.remote_addr
+
+        # Check rate limit
+        if not check_rate_limit(ip_address):
+            return jsonify({
+                "error": "登录尝试次数过多，请15分钟后再试 / Too many login attempts. Please try again in 15 minutes"
+            }), 429
+
+        # Verify password
+        if verify_password(password):
+            # Set session
+            session['authenticated'] = True
+            session.permanent = True
+            return jsonify({"success": True, "message": "登录成功 / Login successful"})
+        else:
+            # Record failed attempt
+            record_login_attempt(ip_address)
+            return jsonify({
+                "error": "密码错误 / Incorrect password"
+            }), 401
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Logout user"""
+    session.clear()
+    return jsonify({"success": True, "message": "已退出登录 / Logged out successfully"})
+
+
+@app.route('/api/auth-status', methods=['GET'])
+def api_auth_status():
+    """Check authentication status"""
+    return jsonify({
+        "authenticated": session.get('authenticated', False)
+    })
+
+
 @app.route('/')
+@login_required
 def index():
     """Render the main page."""
     return render_template('index.html')
 
 
 @app.route('/api/solve', methods=['POST'])
+@login_required
 def api_solve():
     """
     Solve a cutting stock problem.
@@ -125,6 +271,7 @@ def api_solve():
 
 
 @app.route('/api/validate', methods=['POST'])
+@login_required
 def api_validate():
     """
     Validate a solution.
@@ -159,6 +306,7 @@ def api_validate():
 
 
 @app.route('/api/example', methods=['GET'])
+@login_required
 def api_example():
     """
     Get an example problem.
@@ -216,6 +364,7 @@ def api_example():
 
 
 @app.route('/api/upload-excel', methods=['POST'])
+@login_required
 def upload_excel():
     """
     Upload and parse an Excel file with product data.
@@ -377,6 +526,7 @@ def upload_excel():
 
 
 @app.route('/api/download-template', methods=['GET'])
+@login_required
 def download_template():
     """
     Download an Excel template for product data entry.
@@ -534,6 +684,7 @@ def download_template():
 
 
 @app.route('/api/export-products', methods=['POST'])
+@login_required
 def export_products():
     """
     Export product list to Excel file.

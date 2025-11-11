@@ -52,6 +52,60 @@ python app.py
 http://localhost:5000
 ```
 
+## 🔐 Authentication Setup
+
+The webapp includes password protection to secure access. Follow these steps to configure authentication:
+
+### Initial Setup
+
+**1. Run the password setup tool:**
+```bash
+python setup_password.py
+```
+
+**2. Follow the prompts:**
+- Enter your desired password (minimum 8 characters)
+- Confirm the password
+- Choose session timeout duration (recommended: 24 hours)
+
+**3. Start the server:**
+```bash
+python app.py
+```
+
+**4. Access the system:**
+- Navigate to `http://localhost:5000`
+- You'll be redirected to the login page
+- Enter your password to access the system
+
+### Configuration
+
+Authentication settings are stored in `.env` file:
+- `APP_PASSWORD_HASH` - Hashed password (generated automatically)
+- `SECRET_KEY` - Session encryption key (generated automatically)
+- `SESSION_LIFETIME` - Session duration in seconds (default: 86400 = 24 hours)
+
+**⚠️ Important:**
+- Never commit the `.env` file to version control
+- Use HTTPS in production environments
+- Change password regularly for better security
+
+### Common Operations
+
+**Change Password:**
+```bash
+python setup_password.py
+# Follow prompts and confirm overwrite
+```
+
+**Reset Password:**
+```bash
+rm .env
+python setup_password.py
+```
+
+**For detailed authentication documentation, see [AUTH_SETUP.md](AUTH_SETUP.md)**
+
 ## 📁 Directory Structure
 
 ```
@@ -82,13 +136,20 @@ webapp/
 
 ### API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Main web interface |
-| `/api/solve` | POST | Solve a cutting stock problem |
-| `/api/example` | GET | Get example problem JSON |
-| `/api/health` | GET | Health check endpoint |
-| `/api/validate` | POST | Validate a solution |
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/login` | GET | Login page | No |
+| `/api/login` | POST | Authenticate user | No |
+| `/api/logout` | POST | End user session | No |
+| `/api/auth-status` | GET | Check authentication status | No |
+| `/` | GET | Main web interface | Yes |
+| `/api/solve` | POST | Solve a cutting stock problem | Yes |
+| `/api/upload-excel` | POST | Upload Excel file with products | Yes |
+| `/api/download-template` | GET | Download Excel template | Yes |
+| `/api/export-products` | POST | Export products to Excel | Yes |
+| `/api/example` | GET | Get example problem JSON | Yes |
+| `/api/validate` | POST | Validate a solution | Yes |
+| `/api/health` | GET | Health check endpoint | No |
 
 ## 🔌 API Usage
 

@@ -32,6 +32,7 @@
             text-align: center;
             padding: 30px 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
         }
 
         header h1 {
@@ -42,6 +43,25 @@
         header .subtitle {
             font-size: 1em;
             opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         /* Section Headers */
@@ -721,6 +741,7 @@
     <div class="container">
         <!-- Header -->
         <header>
+            <button class="logout-btn" onclick="handleLogout()">🚪 退出登录</button>
             <h1>🎯 家具板材智能下料系统</h1>
             <p class="subtitle">（单位：毫米）</p>
         </header>
@@ -877,8 +898,72 @@
     </div>
 
     <script>
+        // Authentication and session management
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth-status');
+                const data = await response.json();
+
+                if (!data.authenticated) {
+                    // Not authenticated - redirect to login
+                    window.location.href = '/login?return_url=' + encodeURIComponent(window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                // On error, redirect to login to be safe
+                window.location.href = '/login';
+            }
+        }
+
+        async function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    } else {
+                        alert('退出登录失败，请重试');
+                    }
+                } catch (error) {
+                    console.error('Logout failed:', error);
+                    alert('退出登录失败：' + error.message);
+                }
+            }
+        }
+
+        // Handle 401 Unauthorized errors globally
+        function handleUnauthorized() {
+            window.location.href = '/login?return_url=' + encodeURIComponent(window.location.pathname);
+        }
+
+        // Wrapper for fetch calls to handle auth errors
+        async function authenticatedFetch(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+
+                // Check for 401 Unauthorized
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    throw new Error('未授权，请重新登录');
+                }
+
+                return response;
+            } catch (error) {
+                throw error;
+            }
+        }
+
         // Product list starts empty - user can add rows manually or import from Excel
-        window.onload = function() {
+        window.onload = async function() {
+            // Check authentication status on page load
+            await checkAuthStatus();
+
             // No initial rows
         };
 

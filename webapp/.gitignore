@@ -13,6 +13,7 @@ __pycache__/
 # Flask
 instance/
 .webassets-cache
+flask_session/
 
 # Environment variables
 .env
