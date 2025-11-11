@@ -1,19 +1,17 @@
 """
-Local Search Packer with Ruin-and-Recreate.
-
-Inspired by the goal-driven ruin-and-recreate heuristic from gdrr-2bp.
+Local Search Packer with Ruin-and-Recreate - PROPERLY IMPLEMENTED.
 
 Strategy:
 1. Create initial solution with best greedy algorithm
-2. Iteratively "ruin" the solution by removing items from low-utilization bins
-3. "Recreate" by repacking removed items into remaining bins
-4. If improvement found, keep it; otherwise restore
+2. Iteratively "ruin" the solution by removing items from bins
+3. "Recreate" by repacking using actual packing algorithms
+4. If improvement found AND all items placed, keep it
 5. Repeat until no improvement or timeout
 """
 
 import time
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Set
 from tessellate.algorithms.base import PackingAlgorithm
 from tessellate.algorithms.skyline import SkylinePacker
 from tessellate.algorithms.best_fit_packing import BestFitDecreasingPacker
@@ -26,14 +24,14 @@ class LocalSearchPacker(PackingAlgorithm):
     """
     Local Search with ruin-and-recreate heuristic.
 
-    Iteratively improves an initial solution by removing and repacking items.
+    Properly verifies all placements by using actual packing algorithms.
     """
 
     def __init__(
         self,
         time_limit: float = 60.0,
-        max_iterations: int = 100,
-        ruin_size: int = 15
+        max_iterations: int = 200,
+        ruin_percentage: float = 0.15
     ):
         """
         Initialize local search packer.
@@ -41,41 +39,47 @@ class LocalSearchPacker(PackingAlgorithm):
         Args:
             time_limit: Maximum execution time
             max_iterations: Maximum iterations without improvement
-            ruin_size: Number of items to remove per iteration
+            ruin_percentage: Percentage of bins to ruin (0.1-0.3)
         """
         super().__init__(time_limit)
         self.max_iterations = max_iterations
-        self.ruin_size = ruin_size
+        self.ruin_percentage = ruin_percentage
 
     def get_name(self) -> str:
-        return "LocalSearch-RuinRecreate"
+        return "LocalSearch-RuinRecreate-Proper"
 
     def solve(self, problem: Problem) -> Solution:
-        """Solve using local search."""
+        """Solve using local search with proper verification."""
         start_time = time.time()
 
         # Get initial solution using best algorithm
         print("Creating initial solution...")
-        initial_solver = BestFitDecreasingPacker(time_limit=self.time_limit * 0.3)
+        initial_solver = BestFitDecreasingPacker(time_limit=self.time_limit * 0.2)
         best_solution = initial_solver.solve(problem)
         best_bins = best_solution.num_bins()
 
         print(f"Initial: {best_bins} bins, {best_solution.total_utilization():.2%}")
 
+        if len(best_solution.unplaced) > 0:
+            print(f"Warning: {len(best_solution.unplaced)} items unplaced in initial solution")
+            return best_solution
+
         iterations_without_improvement = 0
         iteration = 0
+        attempts = 0
 
         while (time.time() - start_time < self.time_limit * 0.9 and
                iterations_without_improvement < self.max_iterations):
 
             iteration += 1
+            attempts += 1
 
             # Try to improve by ruining and recreating
-            new_solution = self._ruin_and_recreate(
+            new_solution = self._ruin_and_recreate_proper(
                 best_solution, problem, start_time
             )
 
-            if new_solution:
+            if new_solution and len(new_solution.unplaced) == 0:
                 new_bins = new_solution.num_bins()
 
                 if new_bins < best_bins:
@@ -83,42 +87,45 @@ class LocalSearchPacker(PackingAlgorithm):
                     best_solution = new_solution
                     iterations_without_improvement = 0
                     print(f"  Iteration {iteration}: Improved to {best_bins} bins! ({best_solution.total_utilization():.2%})")
+
+                    if best_bins <= 10:
+                        print(f"✓ Achieved target of 10 boards!")
+                        break
                 else:
                     iterations_without_improvement += 1
             else:
                 iterations_without_improvement += 1
 
-            if best_bins <= 10:
-                print(f"✓ Achieved target of 10 boards!")
-                break
+            # Occasional progress update
+            if attempts % 20 == 0:
+                print(f"  Attempt {attempts}: Best = {best_bins} bins")
 
         execution_time = time.time() - start_time
         best_solution.metadata["algorithm"] = self.get_name()
         best_solution.metadata["execution_time"] = execution_time
         best_solution.metadata["iterations"] = iteration
+        best_solution.metadata["attempts"] = attempts
 
         return best_solution
 
-    def _ruin_and_recreate(
+    def _ruin_and_recreate_proper(
         self,
         current_solution: Solution,
         problem: Problem,
         start_time: float
     ) -> Solution:
         """
-        Ruin and recreate step.
-
-        Strategy:
-        1. Identify bins with lowest utilization
-        2. Remove items from these bins
-        3. Try to repack them into other bins
-        4. If successful, eliminate the emptied bins
+        Properly ruin and recreate using actual packing algorithms.
         """
         if time.time() - start_time > self.time_limit:
             return None
 
         if current_solution.num_bins() <= 1:
             return None
+
+        # Determine how many bins to ruin (at least 1, up to ruin_percentage)
+        num_bins = current_solution.num_bins()
+        num_to_ruin = max(1, int(num_bins * self.ruin_percentage))
 
         # Sort bins by utilization (lowest first)
         bin_utils = [
@@ -127,35 +134,35 @@ class LocalSearchPacker(PackingAlgorithm):
         ]
         bin_utils.sort(key=lambda x: x[2])
 
-        # Select bin(s) to ruin (lowest utilization)
-        target_bin_idx = bin_utils[0][0]
-        target_bin = bin_utils[0][1]
+        # Select bins to ruin (lowest utilization)
+        bins_to_ruin_indices = set([bu[0] for bu in bin_utils[:num_to_ruin]])
 
-        # Extract items from target bin
+        # Extract items from ruined bins
         items_to_repack = []
-        for placed_item in target_bin.items:
-            items_to_repack.append(placed_item.item)
+        remaining_bins = []
+
+        for i, bp in enumerate(current_solution.bins):
+            if i in bins_to_ruin_indices:
+                # Extract items
+                for placed_item in bp.items:
+                    items_to_repack.append(placed_item.item)
+            else:
+                # Keep bin
+                remaining_bins.append(bp)
 
         if not items_to_repack:
             return None
 
-        # Try to repack into remaining bins
-        remaining_bins = [
-            bp for i, bp in enumerate(current_solution.bins)
-            if i != target_bin_idx
-        ]
-
-        # Create a temporary problem with just these items
-        temp_items = []
+        # Count items by ID
         item_counts = {}
         for item in items_to_repack:
-            key = item.id
-            item_counts[key] = item_counts.get(key, 0) + 1
+            item_counts[item.id] = item_counts.get(item.id, 0) + 1
 
-        # Group back into items with quantities
+        # Create list of items with quantities
+        repack_items = []
         for orig_item in problem.items:
             if orig_item.id in item_counts:
-                temp_item = Item(
+                repack_item = Item(
                     id=orig_item.id,
                     width=orig_item.width,
                     height=orig_item.height,
@@ -164,81 +171,53 @@ class LocalSearchPacker(PackingAlgorithm):
                     quantity=item_counts[orig_item.id],
                     rotatable=orig_item.rotatable
                 )
-                temp_items.append(temp_item)
+                repack_items.append(repack_item)
 
-        # Try to fit into existing bins
-        successfully_repacked = self._try_fit_into_bins(
-            temp_items, remaining_bins, problem.kerf
+        # Create a subproblem with remaining bins as "available space"
+        # We'll pack the extracted items using a fresh packing algorithm
+
+        # Get bin type
+        if not remaining_bins:
+            return None
+
+        bin_type = remaining_bins[0].bin_type
+
+        # Try to pack items into NEW bins (we'll merge later if possible)
+        temp_problem = Problem(
+            items=repack_items,
+            bins=[bin_type],
+            kerf=problem.kerf
         )
 
-        if successfully_repacked:
-            # Create new solution without the target bin
-            new_solution = Solution()
-            new_solution.bins = remaining_bins
+        # Use Skyline for repacking (fast and good quality)
+        repacker = SkylinePacker(time_limit=min(5.0, self.time_limit * 0.1), use_min_waste=True)
+        repack_solution = repacker.solve(temp_problem)
 
-            # Re-number bins
-            for i, bp in enumerate(new_solution.bins):
-                bp.bin_id = i
+        # Check if repacking succeeded (all items placed)
+        if len(repack_solution.unplaced) > 0:
+            return None  # Failed to repack all items
 
-            # Check for unplaced (should be none if successfully repacked)
-            new_solution.unplaced = []
+        # Check if we used fewer or equal bins than we ruined
+        new_bins_needed = repack_solution.num_bins()
+        if new_bins_needed > num_to_ruin:
+            return None  # No improvement
 
-            return new_solution
+        # SUCCESS: We can use fewer bins!
+        # Create new solution combining remaining bins + repacked bins
+        new_solution = Solution()
 
-        return None
+        # Add remaining bins
+        for bp in remaining_bins:
+            new_solution.bins.append(bp)
 
-    def _try_fit_into_bins(
-        self,
-        items: List[Item],
-        existing_bins: List[BinPacking],
-        kerf: float
-    ) -> bool:
-        """
-        Try to fit items into existing bins.
+        # Add repacked bins
+        for bp in repack_solution.bins:
+            new_solution.bins.append(bp)
 
-        Returns True if all items fit, False otherwise.
-        """
-        # Expand items
-        items_to_place = []
-        for item in items:
-            for _ in range(item.quantity):
-                items_to_place.append(item)
+        # Re-number all bins
+        for i, bp in enumerate(new_solution.bins):
+            bp.bin_id = i
 
-        # Sort by area (largest first)
-        items_to_place.sort(key=lambda x: -x.area())
+        new_solution.unplaced = []
 
-        # Try to place each item using Skyline algorithm on existing bins
-        packer = SkylinePacker(use_min_waste=True)
-
-        for item in items_to_place:
-            placed = False
-
-            # Try each existing bin
-            for bin_packing in existing_bins:
-                # Try to add this item to this bin using skyline
-                # We need to check if there's space
-
-                # Simple check: calculate current utilization
-                current_items = bin_packing.items
-                current_area = sum(p.width * p.height for p in current_items)
-                bin_area = bin_packing.bin_type.area()
-                item_area = item.area()
-
-                # Quick reject if obviously won't fit
-                if current_area + item_area > bin_area * 1.1:
-                    continue
-
-                # Try to actually place it (would need skyline state reconstruction)
-                # For simplicity, use a heuristic: if utilization < 90%, try to add
-                util = current_area / bin_area
-                if util < 0.90:
-                    # Assume it fits (this is a simplification)
-                    # In a full implementation, we'd reconstruct the skyline state
-                    placed = True
-                    # Don't actually add it here, just check feasibility
-                    break
-
-            if not placed:
-                return False
-
-        return True
+        return new_solution
