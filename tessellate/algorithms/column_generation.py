@@ -385,7 +385,7 @@ class ColumnGenerationPacker(PackingAlgorithm):
         packing in horizontal rows with varying row heights.
         """
         import random
-        random.seed(42)  # Deterministic seed for reproducible results
+        # Allow true randomness for pattern diversity across trials
         patterns = []
         common_width_after_rotation = items[0].height  # All become this width when rotated
 
@@ -521,8 +521,8 @@ class ColumnGenerationPacker(PackingAlgorithm):
             return []
 
         # Filter out patterns with very low utilization
-        # Allow lower utilization if we have rotated patterns which can be more efficient overall
-        min_util = 0.65  # Require at least 65% utilization
+        # Allow lower utilization to increase pattern diversity for better optimization
+        min_util = 0.50  # Require at least 50% utilization (lowered for more diversity)
         good_patterns = [i for i, p in enumerate(patterns) if p.utilization >= min_util]
 
         if not good_patterns:
@@ -536,8 +536,10 @@ class ColumnGenerationPacker(PackingAlgorithm):
         h = highspy.Highs()
         h.setOptionValue("log_to_console", False)
         h.setOptionValue("mip_rel_gap", 0.0)  # Require exact optimality
-        # Increased time limit from 60s to 120s for deeper search
-        h.setOptionValue("time_limit", max(120.0, self.time_limit - (time.time() - start_time)))
+        # Extended time limit for thorough optimization (use most of remaining time)
+        remaining_time = self.time_limit - (time.time() - start_time)
+        mip_time = max(300.0, remaining_time * 0.8)  # At least 5 minutes
+        h.setOptionValue("time_limit", mip_time)
 
         num_patterns = len(good_patterns)
 
