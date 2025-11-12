@@ -1,0 +1,137 @@
+================================================================================
+QUICK TEST DATA - Copy & Paste Ready
+================================================================================
+
+SCENARIO 1: SIMPLE WARDROBE (衣柜) - Recommended for First Test
+================================================================================
+
+Product Data (Copy each line for each row):
+-------------------------------------------
+A001, 侧板, 2000, 600, 18, 白橡木, 2, 单向
+A002, 顶底板, 900, 600, 18, 白橡木, 2, 混合
+A003, 背板, 2000, 900, 5, 白橡木, 1, 混合
+A004, 层板, 880, 580, 18, 白橡木, 3, 混合
+A005, 抽屉面板, 400, 200, 18, 白橡木, 3, 单向
+
+Board Settings:
+--------------
+板材规格 (Board Size): 4 x 8 呎 (1220 x 2440)
+锯口尺寸 (Saw Kerf): 3
+利用率 (Utilization): 0.78
+
+
+SCENARIO 2: KITCHEN CABINET (橱柜)
+================================================================================
+
+Product Data:
+-------------------------------------------
+B001, 柜门, 700, 400, 18, 樱桃木, 4, 单向
+B002, 侧板, 800, 600, 18, 樱桃木, 4, 单向
+B003, 台面板, 2400, 600, 25, 樱桃木, 1, 混合
+B004, 隔板, 780, 580, 18, 樱桃木, 6, 混合
+B005, 抽屉侧板, 500, 120, 12, 樱桃木, 8, 混合
+
+Board Settings:
+--------------
+板材规格: 5 x 8 呎 (1530 x 2440)
+锯口尺寸: 3
+利用率: 0.75
+
+
+SCENARIO 3: MINIMAL TEST (最小测试) - Fastest to Enter
+================================================================================
+
+Product Data:
+-------------------------------------------
+T001, 板材A, 800, 400, 18, 白色, 4, 混合
+T002, 板材B, 600, 300, 18, 白色, 6, 混合
+T003, 板材C, 400, 200, 18, 白色, 8, 混合
+
+Board Settings:
+--------------
+板材规格: 4 x 8 呎 (1220 x 2440)
+锯口尺寸: 3
+利用率: 0.75
+
+
+SCENARIO 4: WITH LEFTOVER MATERIAL (含余料)
+================================================================================
+
+Product Data:
+-------------------------------------------
+C001, 竖板, 1800, 250, 18, 胡桃木, 4, 单向
+C002, 层板, 900, 250, 18, 胡桃木, 5, 混合
+C003, 顶板, 920, 300, 18, 胡桃木, 1, 混合
+C004, 底板, 920, 300, 18, 胡桃木, 1, 混合
+
+Leftover Material (Check "库存余料优先" first):
+-------------------------------------------
+800, 600, 18, 胡桃木, 1
+500, 400, 18, 胡桃木, 2
+
+Board Settings:
+--------------
+板材规格: 4 x 8 呎 (1220 x 2440)
+锯口尺寸: 3
+利用率: 0.78
+
+
+SCENARIO 5: OFFICE DESK (办公桌)
+================================================================================
+
+Product Data:
+-------------------------------------------
+D001, 桌面, 1600, 800, 25, 黑胡桃, 1, 单向
+D002, 桌腿侧板, 720, 600, 18, 黑胡桃, 4, 单向
+D003, 抽屉面板, 500, 120, 18, 黑胡桃, 3, 单向
+D004, 抽屉侧板, 450, 120, 12, 黑胡桃, 6, 混合
+D005, 抽屉底板, 480, 430, 5, 黑胡桃, 3, 混合
+
+Board Settings:
+--------------
+板材规格: 5 x 9 呎 (1530 x 2750)
+锯口尺寸: 3
+利用率: 0.80
+
+
+================================================================================
+HOW TO USE
+================================================================================
+
+1. Open: http://localhost:8089/GV/input.jsp (use --noproxy "*" with curl)
+
+2. For each product line above:
+   - Click "添加" (Add) button to create new row
+   - Fill in: 编号, 名称, 长, 宽, 厚, 花色, 数量
+   - Select 纹理方向: 单向 or 混合
+
+3. Set board configuration at bottom
+
+4. Optional: For Scenario 4, check "库存余料优先" and add leftover data
+
+5. Click "确认完成" then "确认开板" to generate cutting plan
+
+6. View results: cutting diagrams, utilization rate, leftover pieces
+
+
+FIELD MEANINGS:
+--------------
+编号 (Code)        - Product identifier
+名称 (Name)        - Product name/description
+长 (Length)        - Length in millimeters
+宽 (Width)         - Width in millimeters  
+厚 (Thickness)     - Thickness in millimeters
+花色 (Color)       - Wood color/pattern
+数量 (Quantity)    - Number of pieces needed
+纹理 (Grain)       - 单向=Directional (no rotation), 混合=Mixed (can rotate)
+
+
+TIPS:
+----
+- Start with Scenario 3 (Minimal Test) - easiest to enter
+- All dimensions are in millimeters
+- Utilization rate 0.75-0.80 is typical (75-80%)
+- Saw kerf 3mm is standard for most saws
+- Use larger boards (5×9, 5×10) for less waste
+
+================================================================================
