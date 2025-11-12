@@ -13,13 +13,18 @@ Parameters maximized:
 - 100 independent trials
 """
 
+import sys
+import os
+# Add parent directory to path so we can import tessellate
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 from tessellate.core.models import Problem, Item, Bin
 import time
 import random
 
 # Read test data
-df = pd.read_excel('test_data/bench/manual1.xlsx')
+df = pd.read_excel('../test_data/bench/manual1.xlsx')
 
 items = []
 for _, row in df.iterrows():
@@ -51,10 +56,6 @@ print("  Utilization filter: ≥40%")
 print("  Number of trials: 100")
 print("  Estimated total time: 24-72 hours")
 print()
-
-# Import the modified packer
-import sys
-sys.path.insert(0, '/home/user/tessellate')
 
 from tessellate.algorithms.column_generation_ultra import ColumnGenerationPackerUltra
 

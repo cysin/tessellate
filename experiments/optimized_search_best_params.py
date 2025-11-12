@@ -16,12 +16,17 @@ This uses:
 Estimated time: 3-6 hours per trial = 150-300 hours total for 50 trials
 """
 
+import sys
+import os
+# Add parent directory to path so we can import tessellate
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 from tessellate.core.models import Problem, Item, Bin
 import time
 
 # Read test data
-df = pd.read_excel('test_data/bench/manual1.xlsx')
+df = pd.read_excel('../test_data/bench/manual1.xlsx')
 
 items = []
 for _, row in df.iterrows():

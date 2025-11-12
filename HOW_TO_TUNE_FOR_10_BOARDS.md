@@ -217,9 +217,12 @@ packer = ColumnGenerationPackerUltra(
 
 ## How to Run
 
+**Note:** All experimental scripts are located in the `experiments/` directory.
+
 ### Quick Test (verify it works)
 
 ```bash
+cd experiments
 python test_ultra_quick.py
 ```
 
@@ -230,7 +233,7 @@ Result: Verifies the packer works
 
 ### Single Trial with Custom Parameters
 
-Edit `test_ultra_quick.py` and modify the parameters:
+Edit `experiments/test_ultra_quick.py` and modify the parameters:
 
 ```python
 packer = ColumnGenerationPackerUltra(
@@ -245,6 +248,7 @@ packer = ColumnGenerationPackerUltra(
 
 Then run:
 ```bash
+cd experiments
 python test_ultra_quick.py
 ```
 
@@ -252,9 +256,10 @@ python test_ultra_quick.py
 
 ### Multiple Trials (100 trials)
 
-Edit `ultra_aggressive_search.py` to use your desired configuration, then:
+Edit `experiments/ultra_aggressive_search.py` to use your desired configuration, then:
 
 ```bash
+cd experiments
 python ultra_aggressive_search.py
 ```
 

@@ -55,22 +55,42 @@ This directory contains all test scripts and experimental optimization attempts 
 
 ## Usage
 
-### To run the optimized search (recommended):
-```bash
-cd experiments
-python optimized_search_best_params.py
-```
+**Important:** All scripts must be run from the `experiments/` directory.
 
-### To run a quick test:
+### Quick 5-minute test (verify everything works):
 ```bash
 cd experiments
 python test_ultra_quick.py
 ```
 
-### To analyze feasibility:
+### Run optimized search (RECOMMENDED - best parameters):
+```bash
+cd experiments
+python optimized_search_best_params.py
+```
+- Time: 3-6 hours per trial, 50 trials total
+- Best chance of finding 10-board solution if it exists
+
+### Run ultra-aggressive search (maximum exploration):
+```bash
+cd experiments
+python ultra_aggressive_search.py
+```
+- Time: 24-72 hours per trial, 100 trials total
+- Exhaustive search with 1M patterns
+
+### Analyze feasibility:
 ```bash
 cd experiments
 python analyze_feasibility.py
+```
+
+### Other useful scripts:
+```bash
+cd experiments
+python find_valid_solutions.py      # 30 trials for success rate
+python force_10_boards.py            # Force exactly 10 boards (proves infeasible)
+python diagnose_overproduction.py   # Debug overproduction issues
 ```
 
 ## Results Summary
