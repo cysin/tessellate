@@ -62,16 +62,18 @@ print()
 
 print("Algorithm: Maximal Rows")
 print("  Strategy:")
-print("  1. Generate ALL possible row patterns that maximize width")
-print("  2. For each row, try all rotation combinations")
-print("  3. Find optimal stacking of rows to minimize boards")
-print("  4. Use greedy selection with backtracking")
+print("  1. For each trial, build a complete packing plan")
+print("  2. Select high-width rows (>70%) greedily")
+print("  3. Try all rotation combinations for each row")
+print("  4. Run multiple trials with different orderings")
+print("  5. Select best trial with minimum boards")
 print()
 
-# Test maximal rows
+# Test maximal rows with 60% width threshold, more trials
 packer = MaximalRowsAlgorithm(
     time_limit=300.0,
-    max_row_patterns=100000
+    num_trials=200,
+    width_threshold=0.60
 )
 
 start = time.time()

@@ -15,6 +15,7 @@ all possible row arrangements.
 """
 
 import time
+import random
 from typing import List, Tuple, Dict, Optional, Set
 from dataclasses import dataclass
 from collections import defaultdict
@@ -51,16 +52,18 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
     by considering all possible row combinations and rotations.
     """
 
-    def __init__(self, time_limit: float = 300.0, max_row_patterns: int = 100000):
+    def __init__(self, time_limit: float = 300.0, num_trials: int = 100, width_threshold: float = 0.70):
         """
         Initialize maximal rows algorithm.
 
         Args:
             time_limit: Maximum execution time
-            max_row_patterns: Maximum number of row patterns to generate
+            num_trials: Number of different packing trials to attempt
+            width_threshold: Minimum width utilization for high-quality rows (0.70 = 70%)
         """
         super().__init__(time_limit)
-        self.max_row_patterns = max_row_patterns
+        self.num_trials = num_trials
+        self.width_threshold = width_threshold
 
     def get_name(self) -> str:
         return "MaximalRows"
@@ -80,8 +83,8 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
         print(f"\n{'='*70}")
         print(f"Maximal Rows Algorithm")
         print(f"{'='*70}")
-        print(f"Strategy: Generate ALL maximized-width row patterns")
-        print(f"Max patterns: {self.max_row_patterns}")
+        print(f"Strategy: Multi-trial row stacking with width threshold")
+        print(f"Trials: {self.num_trials}, Width threshold: {self.width_threshold*100:.0f}%")
         print()
 
         # Group items by material
@@ -128,7 +131,12 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
         start_time: float
     ) -> List[BinPacking]:
         """
-        Pack items by generating all possible row patterns and finding optimal combination.
+        Pack items using multi-trial approach with row stacking.
+
+        Each trial builds a complete packing plan by:
+        1. Selecting high-width rows (>threshold) greedily
+        2. Packing remaining items with any valid rows
+        3. Trying different orderings via multiple trials
         """
         # Expand items to individual pieces
         all_pieces = []
@@ -136,70 +144,181 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
             for _ in range(item.quantity):
                 all_pieces.append(item)
 
-        print(f"    Generating row patterns...")
+        print(f"    Running {self.num_trials} trials to find best packing...")
 
-        # Generate ALL possible row patterns (no width constraint)
-        all_patterns = self._generate_all_row_patterns(
-            all_pieces, bin_type, kerf, start_time, min_width_ratio=0.0
-        )
+        best_solution = None
+        best_num_boards = float('inf')
 
-        print(f"    Generated {len(all_patterns)} row patterns")
+        for trial in range(self.num_trials):
+            if time.time() - start_time > self.time_limit:
+                print(f"    Time limit reached at trial {trial}")
+                break
 
-        # Step 2: Find optimal combination of rows to pack all items
-        boards = self._find_optimal_row_stacking(
-            all_pieces, all_patterns, bin_type, kerf, start_time
-        )
+            # Run one complete packing trial
+            boards = self._run_one_trial(
+                all_pieces, bin_type, kerf, start_time, trial
+            )
 
-        return boards
+            if boards and len(boards) < best_num_boards:
+                best_num_boards = len(boards)
+                best_solution = boards
+                print(f"    Trial {trial}: {len(boards)} boards (NEW BEST)")
 
-    def _generate_all_row_patterns(
+        print(f"    Best solution: {best_num_boards} boards from {trial+1} trials")
+        return best_solution if best_solution else []
+
+    def _run_one_trial(
         self,
-        pieces: List[Item],
+        all_pieces: List[Item],
         bin_type: Bin,
         kerf: float,
         start_time: float,
-        min_width_ratio: float = 0.70
-    ) -> List[RowPattern]:
+        trial_num: int
+    ) -> List[BinPacking]:
         """
-        Generate ALL possible row patterns that maximize width usage.
+        Run one complete packing trial.
 
-        For each subset of items, tries all rotation combinations to find
-        patterns that fit in board width and maximize utilization.
+        Strategy:
+        1. For each board, try to fill with high-width rows (>threshold)
+        2. When high-width rows not available, use any valid rows
+        3. Continue until all pieces packed
         """
-        patterns = []
-        seen_signatures = set()
+        # Shuffle pieces for variation between trials (deterministic based on trial number)
+        pieces = all_pieces.copy()
+        random.seed(trial_num)
+        random.shuffle(pieces)
 
-        # Group identical items to avoid redundant combinations
+        boards = []
+        remaining = pieces
+
+        while remaining:
+            if time.time() - start_time > self.time_limit:
+                break
+
+            # Pack one board
+            board_rows, items_used = self._pack_one_board_with_rows(
+                remaining, bin_type, kerf, start_time
+            )
+
+            if not board_rows:
+                # Can't pack anymore
+                break
+
+            # Create board
+            bin_packing = self._create_bin_from_rows(board_rows, bin_type, kerf, len(boards))
+            boards.append(bin_packing)
+
+            # Remove used items
+            for item in items_used:
+                remaining.remove(item)
+
+        # Only return if all items packed
+        if not remaining:
+            return boards
+        else:
+            return []  # Invalid solution
+
+    def _pack_one_board_with_rows(
+        self,
+        available_pieces: List[Item],
+        bin_type: Bin,
+        kerf: float,
+        start_time: float
+    ) -> Tuple[List[Tuple[RowPattern, List[Tuple[Item, bool]], float]], List[Item]]:
+        """
+        Pack one board by selecting rows that fit.
+
+        Returns:
+            (board_rows, items_used)
+        """
+        board_rows = []
+        current_height = 0.0
+        items_used = []
+        remaining = available_pieces.copy()
+
+        # Fill board with best available rows
+        while remaining:
+            # Use adaptive threshold: prefer high-width rows, but accept lower if needed
+            best_row = self._find_best_row(
+                remaining, bin_type, kerf, current_height,
+                min_width_ratio=self.width_threshold
+            )
+
+            # If no high-width rows, try any width
+            if not best_row:
+                best_row = self._find_best_row(
+                    remaining, bin_type, kerf, current_height,
+                    min_width_ratio=0.0
+                )
+
+            if best_row:
+                pattern, row_items, row_height = best_row
+
+                # Check if fits in height
+                needed_height = row_height + (kerf if board_rows else 0)
+                if current_height + needed_height > bin_type.height:
+                    break
+
+                # Add row to board
+                board_rows.append((pattern, row_items, current_height))
+                current_height += row_height + kerf
+
+                # Remove used items
+                for item, _ in row_items:
+                    remaining.remove(item)
+                    items_used.append(item)
+            else:
+                # No valid rows can be formed
+                break
+
+        return board_rows, items_used
+
+    def _find_best_row(
+        self,
+        available_pieces: List[Item],
+        bin_type: Bin,
+        kerf: float,
+        current_height: float,
+        min_width_ratio: float
+    ) -> Optional[Tuple[RowPattern, List[Tuple[Item, bool]], float]]:
+        """
+        Find the best row from available pieces that meets width threshold.
+
+        Returns:
+            (pattern, items_with_rotations, row_height) or None
+        """
+        # Group identical items
         item_groups = defaultdict(list)
-        for piece in pieces:
+        for piece in available_pieces:
             key = (piece.id, piece.width, piece.height)
             item_groups[key].append(piece)
 
-        unique_items = []
-        item_counts = {}
-        for key, items in item_groups.items():
-            unique_items.append(items[0])
-            item_counts[items[0].id] = len(items)
+        unique_items = [items[0] for items in item_groups.values()]
 
-        print(f"      Unique item types: {len(unique_items)}")
+        best_row = None
+        best_score = -1
 
-        # Generate patterns by trying different item combinations
-        # Start with larger combinations (more items per row = better utilization)
-        for num_items in range(min(len(unique_items), 10), 0, -1):
-            if time.time() - start_time > self.time_limit * 0.3:
-                print(f"      Time limit reached during pattern generation")
-                break
+        # Try combinations of items (up to 8 items per row)
+        max_items_per_row = min(len(unique_items), 8)
 
-            if len(patterns) >= self.max_row_patterns:
-                print(f"      Max patterns reached")
-                break
-
-            # Try combinations of items
+        for num_items in range(max_items_per_row, 0, -1):
             for item_combo in combinations(unique_items, num_items):
-                if time.time() - start_time > self.time_limit * 0.3:
-                    break
+                # Check we have enough items
+                combo_counts = {}
+                for item in item_combo:
+                    key = (item.id, item.width, item.height)
+                    combo_counts[key] = combo_counts.get(key, 0) + 1
 
-                # For each combination, try all rotation possibilities
+                # Verify availability
+                available = True
+                for key, needed_count in combo_counts.items():
+                    if len(item_groups[key]) < needed_count:
+                        available = False
+                        break
+                if not available:
+                    continue
+
+                # Try all rotation combinations
                 rotation_options = []
                 for item in item_combo:
                     if item.rotatable:
@@ -207,286 +326,51 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
                     else:
                         rotation_options.append([False])
 
-                # Generate all rotation combinations
                 for rotations in product(*rotation_options):
-                    # Calculate if this fits in width
+                    # Calculate dimensions
                     total_width = 0.0
                     max_height = 0.0
 
                     for i, (item, rotated) in enumerate(zip(item_combo, rotations)):
-                        item_width = item.height if rotated else item.width
-                        item_height = item.width if rotated else item.height
+                        w = item.height if rotated else item.width
+                        h = item.width if rotated else item.height
 
-                        total_width += item_width
+                        total_width += w
                         if i > 0:
                             total_width += kerf
-                        max_height = max(max_height, item_height)
+                        max_height = max(max_height, h)
 
-                    # Check if fits in board width AND uses substantial width
-                    # This focuses on patterns that truly "maximize width"
-                    width_utilization = total_width / bin_type.width
-                    if total_width <= bin_type.width and width_utilization >= min_width_ratio:
-                        # Create pattern signature to avoid duplicates
-                        signature = self._pattern_signature(item_combo, rotations)
-
-                        if signature not in seen_signatures:
-                            seen_signatures.add(signature)
-
-                            pattern = RowPattern(
-                                items=list(zip(item_combo, rotations)),
-                                width=total_width,
-                                height=max_height
-                            )
-                            patterns.append(pattern)
-
-                            if len(patterns) >= self.max_row_patterns:
-                                break
-
-        # Sort patterns by utilization (best first)
-        patterns.sort(key=lambda p: p.utilization(bin_type.width), reverse=True)
-
-        return patterns
-
-    def _pattern_signature(self, items: Tuple[Item, ...], rotations: Tuple[bool, ...]) -> tuple:
-        """Create signature for pattern deduplication."""
-        item_ids = tuple(sorted((item.id, rotated) for item, rotated in zip(items, rotations)))
-        return item_ids
-
-    def _find_optimal_row_stacking_hybrid(
-        self,
-        all_pieces: List[Item],
-        high_width_patterns: List[RowPattern],
-        medium_width_patterns: List[RowPattern],
-        low_width_patterns: List[RowPattern],
-        bin_type: Bin,
-        kerf: float,
-        start_time: float
-    ) -> List[BinPacking]:
-        """
-        Hybrid stacking: use high-width patterns first, fall back to medium/low-width for remaining items.
-        """
-        boards = []
-        remaining_pieces = all_pieces.copy()
-
-        print(f"    Stacking rows to pack {len(remaining_pieces)} items...")
-
-        # Phase 1: Use high-width patterns
-        phase = "high"
-        active_patterns = high_width_patterns
-        boards_in_phase = 0
-
-        while remaining_pieces:
-            if time.time() - start_time > self.time_limit:
-                print(f"    Time limit reached")
-                break
-
-            # Pack one board
-            board_rows = []
-            current_height = 0.0
-            board_remaining = remaining_pieces.copy()
-
-            # Greedily select rows that fit in this board
-            while board_remaining:
-                best_pattern = None
-                best_score = -1
-
-                # Find best row pattern for remaining items
-                for pattern in active_patterns:
-                    # Check if pattern height fits
-                    row_height = pattern.height
-                    if current_height + row_height + (kerf if board_rows else 0) > bin_type.height:
+                    # Check constraints
+                    width_util = total_width / bin_type.width
+                    if total_width > bin_type.width:
+                        continue
+                    if width_util < min_width_ratio:
                         continue
 
-                    # Check if pattern items are available
-                    items_available = True
-                    items_used = []
-                    temp_remaining = board_remaining.copy()
-
-                    for pattern_item, rotated in pattern.items:
-                        found = False
-                        for i, avail_item in enumerate(temp_remaining):
-                            if (avail_item.id == pattern_item.id and
-                                avail_item.width == pattern_item.width and
-                                avail_item.height == pattern_item.height):
-                                items_used.append((avail_item, rotated))
-                                temp_remaining.pop(i)
-                                found = True
-                                break
-
-                        if not found:
-                            items_available = False
-                            break
-
-                    if not items_available:
-                        continue
-
-                    # Score this pattern
-                    utilization = pattern.utilization(bin_type.width)
-                    num_items = len(pattern.items)
-                    remaining_types = {}
-                    for item in temp_remaining:
-                        key = (item.id, item.width, item.height)
-                        remaining_types[key] = remaining_types.get(key, 0) + 1
-                    balance = len(remaining_types) if remaining_types else 0
-                    score = (utilization * 100) + (num_items * 2) + (balance * 0.5)
+                    # Score: prefer high width utilization and more items
+                    score = width_util * 100 + num_items * 2
 
                     if score > best_score:
                         best_score = score
-                        best_pattern = (pattern, items_used, temp_remaining)
 
-                if best_pattern:
-                    pattern, items_used, temp_remaining = best_pattern
-                    board_rows.append((pattern, items_used, current_height))
-                    current_height += pattern.height + kerf
-                    board_remaining = temp_remaining
-                else:
-                    # No more rows fit
-                    break
+                        # Build items list with actual instances
+                        row_items = []
+                        temp_groups = {k: list(v) for k, v in item_groups.items()}
 
-            if board_rows:
-                # Create board
-                bin_packing = self._create_bin_from_rows(board_rows, bin_type, kerf, len(boards))
-                boards.append(bin_packing)
-                boards_in_phase += 1
+                        for item, rotated in zip(item_combo, rotations):
+                            key = (item.id, item.width, item.height)
+                            actual_item = temp_groups[key].pop(0)
+                            row_items.append((actual_item, rotated))
 
-                num_placed = sum(len(items_used) for _, items_used, _ in board_rows)
-                remaining_pieces = board_remaining
-                util = bin_packing.utilization()
-                print(f"    Board {len(boards)} ({phase}): {util:.2%} utilization, {num_placed} items, {len(remaining_pieces)} remaining")
-            else:
-                # Can't pack with current patterns, try switching to next phase
-                if phase == "high" and remaining_pieces:
-                    print(f"    Switching to medium-width patterns for remaining {len(remaining_pieces)} items")
-                    phase = "medium"
-                    active_patterns = medium_width_patterns
-                    boards_in_phase = 0
-                    continue
-                elif phase == "medium" and remaining_pieces:
-                    print(f"    Switching to low-width patterns for remaining {len(remaining_pieces)} items")
-                    phase = "low"
-                    active_patterns = low_width_patterns
-                    boards_in_phase = 0
-                    continue
-                else:
-                    print(f"    Warning: {len(remaining_pieces)} items couldn't be packed")
-                    break
+                        pattern = RowPattern(
+                            items=list(zip(item_combo, rotations)),
+                            width=total_width,
+                            height=max_height
+                        )
 
-        return boards
+                        best_row = (pattern, row_items, max_height)
 
-    def _find_optimal_row_stacking(
-        self,
-        all_pieces: List[Item],
-        row_patterns: List[RowPattern],
-        bin_type: Bin,
-        kerf: float,
-        start_time: float
-    ) -> List[BinPacking]:
-        """
-        Find optimal combination of row patterns to pack all items.
-
-        This uses a greedy approach: repeatedly select rows that cover
-        the most uncovered items with best utilization.
-        """
-        boards = []
-        remaining_pieces = all_pieces.copy()
-
-        print(f"    Stacking rows to pack {len(remaining_pieces)} items...")
-
-        while remaining_pieces:
-            if time.time() - start_time > self.time_limit:
-                print(f"    Time limit reached")
-                break
-
-            # Pack one board
-            board_rows = []
-            current_height = 0.0
-            board_remaining = remaining_pieces.copy()
-
-            # Greedily select rows that fit in this board
-            while board_remaining:
-                best_pattern = None
-                best_score = -1
-
-                # Find best row pattern for remaining items
-                for pattern in row_patterns:
-                    # Check if pattern height fits
-                    row_height = pattern.height
-                    if current_height + row_height + (kerf if board_rows else 0) > bin_type.height:
-                        continue
-
-                    # Check if pattern items are available
-                    items_available = True
-                    items_used = []
-                    temp_remaining = board_remaining.copy()
-
-                    for pattern_item, rotated in pattern.items:
-                        found = False
-                        for i, avail_item in enumerate(temp_remaining):
-                            if (avail_item.id == pattern_item.id and
-                                avail_item.width == pattern_item.width and
-                                avail_item.height == pattern_item.height):
-                                items_used.append((avail_item, rotated))
-                                temp_remaining.pop(i)
-                                found = True
-                                break
-
-                        if not found:
-                            items_available = False
-                            break
-
-                    if not items_available:
-                        continue
-
-                    # Score this pattern
-                    # Factors: utilization, item count, and balance of remaining items
-                    utilization = pattern.utilization(bin_type.width)
-                    num_items = len(pattern.items)
-
-                    # Bonus for leaving a balanced set of remaining items
-                    # Count item types in remaining set
-                    remaining_types = {}
-                    for item in temp_remaining:
-                        key = (item.id, item.width, item.height)
-                        remaining_types[key] = remaining_types.get(key, 0) + 1
-
-                    # Calculate balance (prefer leaving many different types)
-                    balance = len(remaining_types) if remaining_types else 0
-
-                    # Combined score: prioritize utilization, then item count, then balance
-                    score = (utilization * 100) + (num_items * 2) + (balance * 0.5)
-
-                    if score > best_score:
-                        best_score = score
-                        best_pattern = (pattern, items_used, temp_remaining)
-
-                if best_pattern:
-                    pattern, items_used, temp_remaining = best_pattern
-
-                    # Add this row to the board
-                    board_rows.append((pattern, items_used, current_height))
-                    current_height += pattern.height + kerf
-                    board_remaining = temp_remaining
-                else:
-                    # No more rows fit
-                    break
-
-            if board_rows:
-                # Create BinPacking from rows
-                bin_packing = self._create_bin_from_rows(board_rows, bin_type, kerf, len(boards))
-                boards.append(bin_packing)
-
-                # Update remaining pieces - board_remaining already has the unpacked items
-                num_placed = sum(len(items_used) for _, items_used, _ in board_rows)
-                remaining_pieces = board_remaining
-
-                util = bin_packing.utilization()
-                print(f"    Board {len(boards)}: {util:.2%} utilization, {num_placed} items, {len(remaining_pieces)} remaining")
-            else:
-                # Can't pack any more
-                print(f"    Warning: {len(remaining_pieces)} items couldn't be packed")
-                break
-
-        return boards
+        return best_row
 
     def _create_bin_from_rows(
         self,
