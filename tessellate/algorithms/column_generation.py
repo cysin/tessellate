@@ -647,11 +647,23 @@ class ColumnGenerationPacker(PackingAlgorithm):
         sorted_patterns = sorted(enumerate(patterns), key=lambda x: -x[1].utilization)
 
         while any(qty > 0 for qty in remaining.values()):
-            # Find best pattern that covers at least one needed item
+            # Find best pattern that covers at least one needed item WITHOUT overproduction
             best_pattern = None
             best_score = -1
 
             for p_idx, pattern in sorted_patterns:
+                # CRITICAL: Check if this pattern would cause overproduction
+                would_overproduce = False
+                for item_id in remaining.keys():
+                    count = pattern.get_item_count(item_id)
+                    if count > remaining[item_id]:
+                        # This pattern would overproduce this item
+                        would_overproduce = True
+                        break
+
+                if would_overproduce:
+                    continue  # Skip patterns that would overproduce
+
                 # Count how many needed items this pattern provides
                 coverage = sum(
                     min(pattern.get_item_count(item_id), remaining[item_id])
@@ -666,15 +678,17 @@ class ColumnGenerationPacker(PackingAlgorithm):
                         best_pattern = p_idx
 
             if best_pattern is None:
+                # No pattern found that doesn't overproduce
+                print(f"  Greedy: cannot satisfy remaining items without overproduction")
                 break
 
             # Select this pattern
             selected.append(best_pattern)
 
-            # Update remaining (prevent negative values - no overproduction!)
+            # Update remaining
             for item_id in remaining.keys():
                 count = patterns[best_pattern].get_item_count(item_id)
-                remaining[item_id] = max(0, remaining[item_id] - count)
+                remaining[item_id] -= count
 
         return selected
 
