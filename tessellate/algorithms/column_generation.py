@@ -571,9 +571,13 @@ class ColumnGenerationPacker(PackingAlgorithm):
             row_lower.append(float(item.quantity))  # Exactly this many
             row_upper.append(float(item.quantity))  # No overproduction
 
-        # Build model
+        # Build model - set variables as INTEGER from the start
         h.addVars(num_patterns, col_lower, col_upper)
-        h.changeColsIntegrality(0, num_patterns - 1, var_types)
+
+        # CRITICAL: Set integrality for each variable individually
+        for i in range(num_patterns):
+            h.changeColIntegrality(i, highspy.HighsVarType.kInteger)
+
         h.changeColsCost(0, num_patterns - 1, obj_coeffs)
 
         # Add constraints
