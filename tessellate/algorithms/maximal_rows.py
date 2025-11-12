@@ -19,7 +19,7 @@ import random
 from typing import List, Tuple, Dict, Optional, Set
 from dataclasses import dataclass
 from collections import defaultdict
-from itertools import combinations, product
+from itertools import combinations, product, combinations_with_replacement
 
 from tessellate.algorithms.base import PackingAlgorithm
 from tessellate.core.models import (
@@ -284,6 +284,9 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
         """
         Find the best row from available pieces that meets width threshold.
 
+        Considers all rotation cases - same item can appear multiple times
+        with different rotations (e.g., 2×A rotated + 1×A not rotated).
+
         Returns:
             (pattern, items_with_rotations, row_height) or None
         """
@@ -293,82 +296,99 @@ class MaximalRowsAlgorithm(PackingAlgorithm):
             key = (piece.id, piece.width, piece.height)
             item_groups[key].append(piece)
 
-        unique_items = [items[0] for items in item_groups.values()]
-
         best_row = None
         best_score = -1
 
-        # Try combinations of items (up to 8 items per row)
-        max_items_per_row = min(len(unique_items), 8)
+        # Build list of available (item, rotation) variants
+        # Each variant is treated as a distinct option
+        available_variants = []
+        for key, pieces in item_groups.items():
+            item = pieces[0]
+            count = len(pieces)
+            # Add non-rotated variant
+            available_variants.append((item, False, count, key))
+            # Add rotated variant if rotatable
+            if item.rotatable:
+                available_variants.append((item, True, count, key))
+
+        # Try rows with different numbers of items (up to 6 for performance)
+        max_items_per_row = min(len(available_pieces), 6)
 
         for num_items in range(max_items_per_row, 0, -1):
-            for item_combo in combinations(unique_items, num_items):
-                # Check we have enough items
-                combo_counts = {}
-                for item in item_combo:
-                    key = (item.id, item.width, item.height)
-                    combo_counts[key] = combo_counts.get(key, 0) + 1
+            # Use combinations_with_replacement to allow same variant multiple times
+            # Limit search to first 5000 combinations per size for speed
+            combo_count = 0
+            max_combos_per_size = 5000
+
+            for variant_combo in combinations_with_replacement(available_variants, num_items):
+                combo_count += 1
+                if combo_count > max_combos_per_size:
+                    break
+                # Check if we have enough items for this combination
+                variant_counts = defaultdict(int)
+                for item, rotated, max_count, key in variant_combo:
+                    variant_id = (key, rotated)
+                    variant_counts[variant_id] += 1
 
                 # Verify availability
-                available = True
-                for key, needed_count in combo_counts.items():
-                    if len(item_groups[key]) < needed_count:
-                        available = False
+                valid = True
+                for (key, rotated), needed in variant_counts.items():
+                    available = len(item_groups[key])
+                    if needed > available:
+                        valid = False
                         break
-                if not available:
+                if not valid:
                     continue
 
-                # Try all rotation combinations
-                rotation_options = []
-                for item in item_combo:
-                    if item.rotatable:
-                        rotation_options.append([False, True])
-                    else:
-                        rotation_options.append([False])
+                # Calculate dimensions
+                total_width = 0.0
+                max_height = 0.0
 
-                for rotations in product(*rotation_options):
-                    # Calculate dimensions
-                    total_width = 0.0
-                    max_height = 0.0
+                for i, (item, rotated, _, _) in enumerate(variant_combo):
+                    w = item.height if rotated else item.width
+                    h = item.width if rotated else item.height
 
-                    for i, (item, rotated) in enumerate(zip(item_combo, rotations)):
-                        w = item.height if rotated else item.width
-                        h = item.width if rotated else item.height
+                    total_width += w
+                    if i > 0:
+                        total_width += kerf
+                    max_height = max(max_height, h)
 
-                        total_width += w
-                        if i > 0:
-                            total_width += kerf
-                        max_height = max(max_height, h)
+                # Check constraints
+                if total_width > bin_type.width:
+                    continue
 
-                    # Check constraints
-                    width_util = total_width / bin_type.width
-                    if total_width > bin_type.width:
-                        continue
-                    if width_util < min_width_ratio:
-                        continue
+                width_util = total_width / bin_type.width
+                if width_util < min_width_ratio:
+                    continue
 
-                    # Score: prefer high width utilization and more items
-                    score = width_util * 100 + num_items * 2
+                # Score: prefer high width utilization and more items
+                score = width_util * 100 + num_items * 2
 
-                    if score > best_score:
-                        best_score = score
+                if score > best_score:
+                    best_score = score
 
-                        # Build items list with actual instances
-                        row_items = []
-                        temp_groups = {k: list(v) for k, v in item_groups.items()}
+                    # Build actual items list
+                    row_items = []
+                    temp_groups = {k: list(v) for k, v in item_groups.items()}
 
-                        for item, rotated in zip(item_combo, rotations):
-                            key = (item.id, item.width, item.height)
+                    for item, rotated, _, key in variant_combo:
+                        if temp_groups[key]:
                             actual_item = temp_groups[key].pop(0)
                             row_items.append((actual_item, rotated))
+                        else:
+                            break  # Not enough items
 
+                    if len(row_items) == num_items:
                         pattern = RowPattern(
-                            items=list(zip(item_combo, rotations)),
+                            items=[(item, rotated) for item, rotated, _, _ in variant_combo],
                             width=total_width,
                             height=max_height
                         )
 
                         best_row = (pattern, row_items, max_height)
+
+            if best_row and best_score > 85:  # Found excellent row
+                break
 
         return best_row
 
