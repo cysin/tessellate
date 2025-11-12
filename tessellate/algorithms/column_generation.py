@@ -10,6 +10,7 @@ This implements a pattern-based approach inspired by Branch-and-Price:
 import time
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
+from collections import defaultdict
 import highspy
 from tessellate.algorithms.base import PackingAlgorithm
 from tessellate.core.models import (
@@ -392,8 +393,9 @@ class ColumnGenerationPacker(PackingAlgorithm):
         # We can stack rows vertically as long as total height <=bin_type.height
 
         # Try different item combinations for high-utilization patterns
-        for trial in range(5000):  # Generate many patterns for better coverage
-            if time.time() - start_time > self.time_limit * 0.7:
+        # Increased from 5000 to 10000 for deeper exploration
+        for trial in range(10000):  # Generate many patterns for better coverage
+            if time.time() - start_time > self.time_limit * 0.6:  # More time for generation
                 break
 
             # Randomly select items to pack - try different sizes
@@ -534,7 +536,8 @@ class ColumnGenerationPacker(PackingAlgorithm):
         h = highspy.Highs()
         h.setOptionValue("log_to_console", False)
         h.setOptionValue("mip_rel_gap", 0.0)  # Require exact optimality
-        h.setOptionValue("time_limit", max(60.0, self.time_limit - (time.time() - start_time)))
+        # Increased time limit from 60s to 120s for deeper search
+        h.setOptionValue("time_limit", max(120.0, self.time_limit - (time.time() - start_time)))
 
         num_patterns = len(good_patterns)
 
@@ -601,6 +604,24 @@ class ColumnGenerationPacker(PackingAlgorithm):
             for _ in range(count):
                 selected.append(p_idx)
 
+        # CRITICAL: Validate that solution covers all items exactly
+        item_coverage = defaultdict(int)
+        for p_idx in selected:
+            pattern = patterns[p_idx]
+            for pi in pattern.items:
+                item_coverage[pi.item.id] += 1
+
+        # Check if all items are covered exactly
+        is_valid = True
+        for item in items:
+            if item_coverage[item.id] != item.quantity:
+                is_valid = False
+                break
+
+        if not is_valid:
+            print(f"  Warning: MIP solution doesn't cover all items exactly, using greedy fallback")
+            return self._greedy_pattern_selection(items, patterns)
+
         return selected
 
     def _greedy_pattern_selection(
@@ -650,10 +671,10 @@ class ColumnGenerationPacker(PackingAlgorithm):
             # Select this pattern
             selected.append(best_pattern)
 
-            # Update remaining
+            # Update remaining (prevent negative values - no overproduction!)
             for item_id in remaining.keys():
                 count = patterns[best_pattern].get_item_count(item_id)
-                remaining[item_id] -= count
+                remaining[item_id] = max(0, remaining[item_id] - count)
 
         return selected
 
