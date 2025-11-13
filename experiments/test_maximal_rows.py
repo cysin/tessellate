@@ -60,20 +60,18 @@ print(f"  10 boards = {board_area * 10:,.0f} mm²")
 print(f"  Required avg utilization for 10 boards: {(total_area / (board_area * 10)) * 100:.2f}%")
 print()
 
-print("Algorithm: Maximal Rows")
+print("Algorithm: Maximal Rows - EXHAUSTIVE SEARCH")
 print("  Strategy:")
-print("  1. For each trial, build a complete packing plan")
-print("  2. Select high-width rows (>70%) greedily")
-print("  3. Try all rotation combinations for each row")
-print("  4. Run multiple trials with different orderings")
-print("  5. Select best trial with minimum boards")
+print("  1. Generate ALL possible row patterns (no limits)")
+print("  2. Try ALL rotation combinations for every row")
+print("  3. Use backtracking to try ALL ways to stack rows")
+print("  4. Find absolute minimum boards needed")
+print("  5. WARNING: May take a VERY long time!")
 print()
 
-# Test maximal rows with 60% width threshold, more trials
+# Test maximal rows with exhaustive search (1 hour time limit)
 packer = MaximalRowsAlgorithm(
-    time_limit=300.0,
-    num_trials=200,
-    width_threshold=0.60
+    time_limit=3600.0  # 1 hour
 )
 
 start = time.time()
