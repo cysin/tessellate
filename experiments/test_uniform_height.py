@@ -1,8 +1,7 @@
 """
-Test Maximal Rows Algorithm
+Test Uniform Height Algorithm
 
-Tests the exhaustive row pattern generation approach that should
-find the 10-board solution.
+Tests the specialized algorithm for items with uniform height.
 """
 
 import sys
@@ -11,11 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 from tessellate.core.models import Problem, Item, Bin
-from tessellate.algorithms.maximal_rows import MaximalRowsAlgorithm
+from tessellate.algorithms.uniform_height_algorithm import UniformHeightAlgorithm
 import time
 
 print("="*70)
-print(" MAXIMAL ROWS ALGORITHM TEST")
+print(" UNIFORM HEIGHT ALGORITHM TEST")
 print("="*70)
 print()
 
@@ -60,19 +59,8 @@ print(f"  10 boards = {board_area * 10:,.0f} mm²")
 print(f"  Required avg utilization for 10 boards: {(total_area / (board_area * 10)) * 100:.2f}%")
 print()
 
-print("Algorithm: Maximal Rows - EXHAUSTIVE SEARCH")
-print("  Strategy:")
-print("  1. Generate ALL possible row patterns (no limits)")
-print("  2. Try ALL rotation combinations for every row")
-print("  3. Use backtracking to try ALL ways to stack rows")
-print("  4. Find absolute minimum boards needed")
-print("  5. WARNING: May take a VERY long time!")
-print()
-
-# Test maximal rows with exhaustive search (5 minute time limit for testing)
-packer = MaximalRowsAlgorithm(
-    time_limit=300.0  # 5 minutes
-)
+# Test uniform height algorithm
+packer = UniformHeightAlgorithm(time_limit=300.0)
 
 start = time.time()
 solution = packer.solve(problem)
@@ -135,11 +123,11 @@ print("="*70)
 print(" COMPARISON WITH OTHER ALGORITHMS")
 print("="*70)
 print()
-print("Expected results:")
+print("Results comparison:")
 print("  Strip Packing: 12 boards @ 78.96%")
 print("  Guillotine: 11 boards @ 85.81%")
 print("  Column Generation: 11-12 boards @ 78-86%")
-print(f"  Maximal Rows: {boards} boards @ {avg_util:.2%}")
+print(f"  Uniform Height: {boards} boards @ {avg_util:.2%}")
 print()
 print("="*70)
 print("TEST COMPLETE")

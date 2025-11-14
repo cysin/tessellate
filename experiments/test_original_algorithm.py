@@ -1,8 +1,8 @@
 """
-Test Maximal Rows Algorithm
+Test Original Chinese Furniture Factory Algorithm
 
-Tests the exhaustive row pattern generation approach that should
-find the 10-board solution.
+Tests the algorithm that optimizes for minimum cutting PATTERNS (开板图),
+not minimum boards. This is the key difference from Western bin packing.
 """
 
 import sys
@@ -11,11 +11,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 from tessellate.core.models import Problem, Item, Bin
-from tessellate.algorithms.maximal_rows import MaximalRowsAlgorithm
+from tessellate.algorithms.original_algorithm import OriginalAlgorithm
 import time
 
 print("="*70)
-print(" MAXIMAL ROWS ALGORITHM TEST")
+print(" ORIGINAL CHINESE FURNITURE FACTORY ALGORITHM TEST")
 print("="*70)
 print()
 
@@ -56,29 +56,25 @@ print(f"  Total item area: {total_area:,.0f} mm²")
 print(f"  Board area: {board_area:,.0f} mm²")
 print(f"  Theoretical minimum (no waste): {theoretical_min:.2f} boards")
 print()
-print(f"  10 boards = {board_area * 10:,.0f} mm²")
-print(f"  Required avg utilization for 10 boards: {(total_area / (board_area * 10)) * 100:.2f}%")
-print()
 
-print("Algorithm: Maximal Rows - EXHAUSTIVE SEARCH")
+print("Algorithm: Original Chinese Furniture Factory (原始开板算法)")
+print("  Optimization Goal: Minimize cutting PATTERNS (开板图), not boards!")
 print("  Strategy:")
-print("  1. Generate ALL possible row patterns (no limits)")
-print("  2. Try ALL rotation combinations for every row")
-print("  3. Use backtracking to try ALL ways to stack rows")
-print("  4. Find absolute minimum boards needed")
-print("  5. WARNING: May take a VERY long time!")
+print("  1. 串排长度 - Horizontal arrangement by width groups (long to short)")
+print("  2. 并排宽度 - Vertical stacking of rows (wide to narrow)")
+print("  3. 叠放 - Pattern reuse for multiple boards")
+print("  Key: Same cutting pattern can be used for many boards!")
 print()
 
-# Test maximal rows with exhaustive search (5 minute time limit for testing)
-packer = MaximalRowsAlgorithm(
-    time_limit=300.0  # 5 minutes
-)
+# Test original algorithm
+packer = OriginalAlgorithm(time_limit=300.0)
 
 start = time.time()
 solution = packer.solve(problem)
 elapsed = time.time() - start
 
 boards = len(solution.bins)
+num_patterns = solution.metadata.get("num_patterns", 0)
 utils = [bp.utilization() for bp in solution.bins]
 avg_util = sum(utils) / len(utils) if utils else 0
 items_placed = sum(len(bp.items) for bp in solution.bins)
@@ -88,7 +84,9 @@ print()
 print(f"{'='*70}")
 print(" RESULTS")
 print(f"{'='*70}")
-print(f"Boards: {boards}")
+print(f"Cutting Patterns (开板图): {num_patterns}")
+print(f"Total Boards: {boards}")
+print(f"Pattern Reuse Factor: {boards / num_patterns if num_patterns > 0 else 0:.1f}x")
 print(f"Average Utilization: {avg_util:.2%}")
 print(f"Items Placed: {items_placed}/{items_required}")
 print(f"Valid: {'✓' if items_placed == items_required else '✗'}")
@@ -109,24 +107,23 @@ if items_placed == items_required:
     print(f"  Range: {max(utils) - min(utils):.2%}")
     print()
 
-    # Check if we achieved 10 boards
-    if boards == 10:
+    # Check pattern efficiency
+    if num_patterns <= 3:
         print("="*70)
-        print(" ★★★ SUCCESS: ACHIEVED 10-BOARD SOLUTION! ★★★")
-        print("="*70)
-        print()
-        print("This is the target solution we were looking for!")
-        print(f"Average utilization: {avg_util:.2%}")
-        print(f"This {'meets' if avg_util >= 0.90 else 'does not meet'} the >90% utilization target.")
-    elif boards < 10:
-        print("="*70)
-        print(f" ★★★ EVEN BETTER: {boards} BOARDS! ★★★")
+        print(f" ★★★ EXCELLENT: {num_patterns} CUTTING PATTERNS! ★★★")
         print("="*70)
         print()
-        print(f"Exceeded expectations! Found {boards}-board solution.")
+        print("This matches the target of 2-3 cutting patterns!")
+        print(f"Production efficiency: Each pattern used {boards / num_patterns:.1f}x on average")
+        print("This maximizes production efficiency through pattern reuse (叠放).")
+    elif num_patterns <= 5:
+        print(f"Result: {num_patterns} cutting patterns (target was 2-3)")
+        print(f"Pattern reuse: {boards / num_patterns:.1f}x average")
+        print("Good pattern consolidation, but could be optimized further.")
     else:
-        print(f"Result: {boards} boards (target was 10 boards)")
-        print(f"Difference: {boards - 10} extra boards")
+        print(f"Result: {num_patterns} cutting patterns")
+        print(f"This is higher than the target of 2-3 patterns.")
+        print("May need re-optimization to consolidate patterns.")
 else:
     print(f"⚠️  Warning: Did not place all items ({items_placed}/{items_required})")
 
@@ -135,11 +132,14 @@ print("="*70)
 print(" COMPARISON WITH OTHER ALGORITHMS")
 print("="*70)
 print()
-print("Expected results:")
+print("Results comparison:")
 print("  Strip Packing: 12 boards @ 78.96%")
 print("  Guillotine: 11 boards @ 85.81%")
 print("  Column Generation: 11-12 boards @ 78-86%")
-print(f"  Maximal Rows: {boards} boards @ {avg_util:.2%}")
+print(f"  Original Algorithm: {boards} boards @ {avg_util:.2%} using {num_patterns} patterns")
+print()
+print("NOTE: Original algorithm optimizes for PATTERNS, not boards!")
+print("      Fewer patterns = fewer machine setups = higher efficiency")
 print()
 print("="*70)
 print("TEST COMPLETE")
